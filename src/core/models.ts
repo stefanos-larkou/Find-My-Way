@@ -13,6 +13,11 @@ export interface HexMap {
     cells: CellState[];
 }
 
+export interface HexPair {
+    start: Hex;
+    end: Hex;
+}
+
 export type SearchEvent =
     | { type: "visit"; hex: Hex; }
     | { type: "path"; hexes: Hex[]; };

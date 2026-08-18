@@ -8,3 +8,5 @@ export const NEIGHBOUR_OFFSETS: Hex[] = [
     { q: -1, r: 1 },
     { q: 0, r: 1 }
 ];
+
+export const UNREACHABLE = -1;

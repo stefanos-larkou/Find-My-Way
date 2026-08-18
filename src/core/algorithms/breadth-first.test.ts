@@ -1,30 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { CellState, Hex, HexMap, SearchEvent } from "../models";
-import { createMap, setCell } from "../grid";
+import type { Hex, SearchEvent } from "../models";
 import { breadthFirst } from "./breadth-first";
-
-function stateFrom(symbol: string): CellState {
-    switch (symbol) {
-        case ".":
-            return "open";
-        case "#":
-            return "wall";
-        case " ":
-            return "absent";
-        default:
-            throw new Error(`Unknown map symbol: ${symbol}`);
-    }
-}
-
-function mapFrom(rows: string[]): HexMap {
-    const map = createMap(rows[0]?.length ?? 0, rows.length);
-
-    rows.forEach((row, r) => {
-        [...row].forEach((symbol, q) => setCell(map, { q, r }, stateFrom(symbol)));
-    });
-
-    return map;
-}
+import { mapFrom } from "../test-maps";
 
 function pathOf(events: SearchEvent[]): Hex[] | undefined {
     for (const event of events) {
