@@ -5,10 +5,11 @@
     "type": "module",
     "scripts": {
         "start": "npm run dev",
+        "check": "npm run lint && npm test && npm run build",
         "dev": "vite",
         "build": "tsc -b && vite build",
         "lint": "eslint .",
-        "test": "vitest run --passWithNoTests",
+        "test": "vitest run",
         "preview": "vite preview"
     },
     "dependencies": {
