@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, withWalls } from "./grid";
+import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, withWalls } from "./grid";
 import { mapFrom } from "./test-maps";
 
 describe("createMap", () => {
@@ -114,5 +114,23 @@ describe("withWalls", () => {
         const map = mapFrom(["..", ".."]);
         withWalls(map, new Set([0]));
         expect(cellAt(map, { q: 0, r: 0 })).toBe("open");
+    });
+});
+
+describe("hexDistance", () => {
+    it("is zero for the same hex", () => {
+        expect(hexDistance({ q: 2, r: 3 }, { q: 2, r: 3 })).toBe(0);
+    });
+
+    it("is one for every neighbour", () => {
+        const map = createMap(5, 5);
+        const centre = { q: 2, r: 2 };
+        adjacent(map, centre).forEach(hex => expect(hexDistance(centre, hex)).toBe(1));
+    });
+
+    it("counts steps across the lattice", () => {
+        expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: 0 })).toBe(3);
+        expect(hexDistance({ q: 0, r: 0 }, { q: 0, r: 3 })).toBe(3);
+        expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: -3 })).toBe(3);
     });
 });
