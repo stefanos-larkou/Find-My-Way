@@ -11,7 +11,7 @@ export const LIGHT_PALETTE: MapPalette = {
 
 export const DARK_PALETTE: MapPalette = {
     open: { fill: "#262d36", stroke: "#39424e" },
-    wall: { fill: "#11151a", stroke: "#05080b" },
+    wall: { fill: "#7f8b99", stroke: "#9aa6b4" },
     visited: { fill: "#1f4468", stroke: "#2c5c8a" },
     path: { fill: "#ffc94d", stroke: "#d9a52f" },
     start: { fill: "#3ecf7a", stroke: "#2ea55f" },

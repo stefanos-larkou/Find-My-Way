@@ -64,3 +64,11 @@ export function presentCells(map: HexMap): Hex[] {
         .map((_, index) => hexAt(map, index))
         .filter(hex => cellAt(map, hex) !== "absent");
 }
+
+export function withWalls(map: HexMap, walls: ReadonlySet<number>): HexMap {
+    return {
+        width: map.width,
+        height: map.height,
+        cells: map.cells.map((state, index) => state === "open" && walls.has(index) ? "wall" : state)
+    };
+}
