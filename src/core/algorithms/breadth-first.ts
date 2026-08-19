@@ -1,5 +1,6 @@
 import { isOpen, indexOf, sameHex, neighbours } from "../grid";
-import type { HexMap, Hex, SearchEvent, Nullable } from "../models";
+import type { HexMap, Hex, SearchEvent } from "../models";
+import { buildPath } from "./path";
 
 export function breadthFirst(map: HexMap, start: Hex, end: Hex): SearchEvent[] {
     if (!isOpen(map, start)) return [];
@@ -31,16 +32,4 @@ export function breadthFirst(map: HexMap, start: Hex, end: Hex): SearchEvent[] {
     }
 
     return events;
-}
-
-function buildPath(map: HexMap, cameFrom: (Hex | null)[], end: Hex): Hex[] {
-    const path: Hex[] = [];
-    let step: Nullable<Hex> = end;
-
-    while (step) {
-        path.push(step);
-        step = cameFrom[indexOf(map, step)];
-    }
-
-    return path.reverse();
 }
