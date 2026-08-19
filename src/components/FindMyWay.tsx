@@ -3,45 +3,63 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
-import { Box, IconButton, Slider, Stack, Tooltip } from "@mui/material";
+import { Box, IconButton, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { HexMap, Search } from "../core/models";
-import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MIN_CELL_COUNT, MIN_STEP_SIZE, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
+import type { MouseEvent, PointerEvent } from "react";
+import type { Hex, HexMap, HexPair, Search } from "../core/models";
+import { CELL_COUNT_KEY, COMPLEXITY_KEY, CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MIN_CELL_COUNT, MIN_STEP_SIZE, SLIDER_MAX, SLIDER_MIN, SPEED_KEY, STEP_SIZE_KEY, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { breadthFirst } from "../core/algorithms/breadth-first";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
+import { cellAt, indexOf, sameHex, withWalls } from "../core/grid";
 import { createRandom } from "../core/random";
 import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
+import { useElementSize } from "../hooks/useElementSize";
+import { usePersistedNumber } from "../hooks/usePersistedNumber";
 import { usePlayback } from "../hooks/usePlayback";
 import { drawMap, prepareCanvas } from "../render/draw";
-import { layoutFor } from "../render/geometry";
+import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
 import { hexesToDraw } from "../render/layout";
 import { paletteFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
-import { useElementSize } from "../hooks/useElementSize";
+
+type EditMode = "wall" | "start" | "end";
+type WallStroke = "add" | "remove";
+
+const ORIGIN: Hex = { q: 0, r: 0 };
 
 export function FindMyWay() {
     const theme = useTheme();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const contextRef = useRef<CanvasRenderingContext2D | undefined>(undefined);
     const mapAreaRef = useRef<HTMLDivElement>(null);
+    const strokeRef = useRef<WallStroke | undefined>(undefined);
     const available = useElementSize(mapAreaRef);
     const [seed, setSeed] = useState(() => Date.now());
-    const [cellCount, setCellCount] = useState(DEFAULT_CELL_COUNT);
-    const [complexitySlider, setComplexitySlider] = useState(DEFAULT_COMPLEXITY_SLIDER);
-    const [speedSlider, setSpeedSlider] = useState(DEFAULT_SPEED_SLIDER);
-    const [stepSize, setStepSize] = useState(DEFAULT_STEP_SIZE);
+    const [cellCount, setCellCount] = usePersistedNumber(CELL_COUNT_KEY, DEFAULT_CELL_COUNT, MIN_CELL_COUNT, MAX_CELL_COUNT);
+    const [complexitySlider, setComplexitySlider] = usePersistedNumber(COMPLEXITY_KEY, DEFAULT_COMPLEXITY_SLIDER, SLIDER_MIN, SLIDER_MAX);
+    const [speedSlider, setSpeedSlider] = usePersistedNumber(SPEED_KEY, DEFAULT_SPEED_SLIDER, SLIDER_MIN, SLIDER_MAX);
+    const [stepSize, setStepSize] = usePersistedNumber(STEP_SIZE_KEY, DEFAULT_STEP_SIZE, MIN_STEP_SIZE, MAX_STEP_SIZE);
+    const [walls, setWalls] = useState<ReadonlySet<number>>(new Set());
+    const [chosen, setChosen] = useState<Partial<HexPair>>({});
+    const [mode, setMode] = useState<EditMode>("wall");
 
-    const map = useMemo(
+    const baseMap = useMemo(
         () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
         [cellCount, complexitySlider, seed]
     );
-    const search = useMemo(() => searchOn(map), [map]);
-    const view = useMemo(() => layoutFor(map, available), [map, available]);
+    const map = useMemo(() => withWalls(baseMap, walls), [baseMap, walls]);
+    const defaults = useMemo(() => furthestApart(baseMap), [baseMap]);
+    const endpoints = useMemo<HexPair>(() => ({
+        start: chosen.start ?? defaults?.start ?? ORIGIN,
+        end: chosen.end ?? defaults?.end ?? ORIGIN
+    }), [chosen, defaults]);
+    const search = useMemo(() => searchOn(map, endpoints), [map, endpoints]);
+    const view = useMemo(() => layoutFor(baseMap, available), [baseMap, available]);
     const speed = useMemo(() => speedFrom(speedSlider), [speedSlider]);
     const playback = usePlayback(search.events.length, speed);
     const roles = useMemo(() => rolesAt(map, search, playback.index), [map, search, playback.index]);
@@ -50,18 +68,81 @@ export function FindMyWay() {
         [map, roles, theme.palette.mode, view]
     );
 
-    const regenerate = useCallback(() => {
-        setSeed(Date.now());
+    const restart = useCallback(() => {
+        setWalls(new Set());
+        setChosen({});
         playback.reset();
     }, [playback]);
+
+    const regenerate = useCallback(() => {
+        setSeed(Date.now());
+        restart();
+    }, [restart]);
 
     const changeCellCount = useCallback((value: number) => {
         setCellCount(value);
-        playback.reset();
-    }, [playback]);
+        restart();
+    }, [setCellCount, restart]);
 
     const changeComplexity = useCallback((value: number) => {
         setComplexitySlider(value);
+        restart();
+    }, [setComplexitySlider, restart]);
+
+    const changeMode = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
+        if (next) setMode(next);
+    }, []);
+
+    const hexUnder = useCallback((event: PointerEvent<HTMLCanvasElement>): Hex => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+
+        return roundHex(pixelToHex({ x: event.clientX - bounds.left, y: event.clientY - bounds.top }, view));
+    }, [view]);
+
+    const paint = useCallback((hex: Hex, stroke: WallStroke) => {
+        setWalls(current => painted(current, indexOf(baseMap, hex), stroke));
+    }, [baseMap]);
+
+    const editable = useCallback((hex: Hex) => {
+        return cellAt(baseMap, hex) !== "absent"
+            && !sameHex(hex, endpoints.start)
+            && !sameHex(hex, endpoints.end);
+    }, [baseMap, endpoints]);
+
+    const beginStroke = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
+        const hex = hexUnder(event);
+
+        if (mode !== "wall") {
+            if (cellAt(map, hex) !== "open") return;
+            if (sameHex(hex, mode === "start" ? endpoints.end : endpoints.start)) return;
+
+            setChosen(current => mode === "start" ? { ...current, start: hex } : { ...current, end: hex });
+            playback.reset();
+            return;
+        }
+
+        if (!editable(hex)) return;
+
+        const stroke: WallStroke = cellAt(map, hex) === "wall" ? "remove" : "add";
+        strokeRef.current = stroke;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        paint(hex, stroke);
+    }, [hexUnder, mode, map, endpoints, editable, paint, playback]);
+
+    const continueStroke = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
+        const stroke = strokeRef.current;
+        if (!stroke) return;
+
+        const hex = hexUnder(event);
+        if (!editable(hex)) return;
+
+        paint(hex, stroke);
+    }, [hexUnder, editable, paint]);
+
+    const endStroke = useCallback(() => {
+        if (!strokeRef.current) return;
+
+        strokeRef.current = undefined;
         playback.reset();
     }, [playback]);
 
@@ -116,6 +197,18 @@ export function FindMyWay() {
                     max={SLIDER_MAX}
                     onChange={changeComplexity}
                 />
+                <ToggleButtonGroup
+                    value={mode}
+                    exclusive
+                    size="small"
+                    onChange={changeMode}
+                    aria-label="What a click places"
+                    sx={{ alignSelf: "center" }}
+                >
+                    <ToggleButton value="wall">Wall</ToggleButton>
+                    <ToggleButton value="start">Start</ToggleButton>
+                    <ToggleButton value="end">End</ToggleButton>
+                </ToggleButtonGroup>
             </Stack>
 
             <Box
@@ -130,7 +223,15 @@ export function FindMyWay() {
                     overflow: "hidden"
                 }}
             >
-                <Box component="canvas" ref={canvasRef} sx={{ display: "block", maxWidth: "100%" }} />
+                <Box
+                    component="canvas"
+                    ref={canvasRef}
+                    onPointerDown={beginStroke}
+                    onPointerMove={continueStroke}
+                    onPointerUp={endStroke}
+                    onPointerCancel={endStroke}
+                    sx={{ display: "block", maxWidth: "100%", cursor: "pointer", touchAction: "none" }}
+                />
             </Box>
 
             <Box
@@ -215,8 +316,16 @@ function stepLabel(steps: number): string {
     return `Step ${steps < 0 ? "back" : "forward"} ${size} event${size === 1 ? "" : "s"}`;
 }
 
-function searchOn(map: HexMap): Search {
-    const pair = furthestApart(map);
-    if (!pair) return { events: [], start: { q: 0, r: 0 }, end: { q: 0, r: 0 } };
+function painted(walls: ReadonlySet<number>, index: number, stroke: WallStroke): ReadonlySet<number> {
+    if (stroke === "add" ? walls.has(index) : !walls.has(index)) return walls;
+
+    const next = new Set(walls);
+    if (stroke === "add") next.add(index);
+    else next.delete(index);
+
+    return next;
+}
+
+function searchOn(map: HexMap, pair: HexPair): Search {
     return { events: breadthFirst(map, pair.start, pair.end), start: pair.start, end: pair.end };
 }

@@ -39,4 +39,17 @@ describe("FindMyWay", () => {
         fireEvent.change(screen.getByLabelText("Step size"), { target: { value: "5" } });
         expect(screen.getByRole("button", { name: "Step forward 5 events" })).toBeInTheDocument();
     });
+
+    it("switches what a click places", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("button", { name: "Start" }));
+        expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("keeps the current mode when the active button is clicked again", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("button", { name: "Start" }));
+        await userEvent.click(screen.getByRole("button", { name: "Start" }));
+        expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-pressed", "true");
+    });
 });
