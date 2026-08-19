@@ -1,5 +1,4 @@
-import type { DrawnHex, HexStyle, Pixel } from "../core/models";
-import { hexCorners } from "./geometry";
+import type { DrawnHex, Pixel } from "../core/models";
 
 export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRenderingContext2D | undefined {
     const context = canvas.getContext("2d");
@@ -17,22 +16,20 @@ export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRen
 
 export function drawMap(context: CanvasRenderingContext2D, hexes: DrawnHex[]): void {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    hexes.forEach(hex => drawHex(context, hex.centre, hex.style));
+    hexes.forEach(hex => drawHex(context, hex));
 }
 
-function drawHex(context: CanvasRenderingContext2D, centre: Pixel, style: HexStyle): void {
-    const [first, ...rest] = hexCorners(centre);
-    if (!first) {
-        return;
-    }
+function drawHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
+    const [first, ...rest] = hex.corners;
+    if (!first) return;
 
     context.beginPath();
     context.moveTo(first.x, first.y);
     rest.forEach(corner => context.lineTo(corner.x, corner.y));
     context.closePath();
 
-    context.fillStyle = style.fill;
+    context.fillStyle = hex.style.fill;
     context.fill();
-    context.strokeStyle = style.stroke;
+    context.strokeStyle = hex.style.stroke;
     context.stroke();
 }

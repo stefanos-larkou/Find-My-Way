@@ -1,36 +1,27 @@
-import { useEffect, useRef } from "react";
-import { generateMap, optionsFor } from "../core/generation";
-import { createRandom } from "../core/random";
-import { drawMap, prepareCanvas } from "../render/draw";
-import { canvasSize } from "../render/geometry";
-import { LIGHT_PALETTE } from "../render/palette";
-import { rolesAt } from "../render/roles";
-import { breadthFirst } from "../core/algorithms/breadth-first";
-import { furthestApart } from "../core/furthest";
-import type { Search } from "../core/models";
-import { hexesToDraw } from "../render/layout";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import { Box, CssBaseline, IconButton, ThemeProvider, createTheme } from "@mui/material";
+import { useMemo, useState } from "react";
+import { FindMyWay } from "../components/FindMyWay";
 
 export function Harness() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [mode, setMode] = useState<"light" | "dark">("dark");
+    const theme = useMemo(() => createTheme({ palette: { mode } }), [mode]);
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const map = generateMap(optionsFor(150, 0.4), createRandom(Date.now()));
-        const context = prepareCanvas(canvas, canvasSize(map));
-        const pair = furthestApart(map);
-        if (!context || !pair) return;
-
-        const search: Search = {
-            events: breadthFirst(map, pair.start, pair.end),
-            start: pair.start,
-            end: pair.end
-        };
-        const roles = rolesAt(map, search, search.events.length - 1);
-
-        drawMap(context, hexesToDraw(map, roles, LIGHT_PALETTE));
-    }, []);
-
-    return <canvas ref={canvasRef} />;
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+                <Box sx={{ alignSelf: "flex-end", p: 1 }}>
+                    <IconButton
+                        onClick={() => setMode(current => current === "dark" ? "light" : "dark")}
+                        aria-label="Toggle theme"
+                    >
+                        {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+                    </IconButton>
+                </Box>
+                <FindMyWay />
+            </Box>
+        </ThemeProvider>
+    );
 }
