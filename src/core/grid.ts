@@ -58,3 +58,9 @@ export function openCells(map: HexMap): Hex[] {
         .map((_, index) => hexAt(map, index))
         .filter(hex => isOpen(map, hex));
 }
+
+export function presentCells(map: HexMap): Hex[] {
+    return map.cells
+        .map((_, index) => hexAt(map, index))
+        .filter(hex => cellAt(map, hex) !== "absent");
+}

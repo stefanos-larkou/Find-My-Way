@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Harness } from "./Harness";
 
 const root = document.getElementById("root");
 if (!root) {
@@ -8,6 +9,6 @@ if (!root) {
 
 createRoot(root).render(
     <StrictMode>
-        <p>Find My Way dev harness</p>
+        <Harness />
     </StrictMode>
 );

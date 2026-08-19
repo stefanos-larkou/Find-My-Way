@@ -5,6 +5,11 @@ export interface Hex {
     r: number;
 }
 
+export interface FractionalHex {
+    q: number;
+    r: number;
+}
+
 export type CellState = "absent" | "open" | "wall";
 
 export interface HexMap {
@@ -27,4 +32,19 @@ export interface GenerationOptions {
     height: number;
     cellCount: number;
     complexity: number;
+}
+
+export interface Pixel {
+    x: number;
+    y: number;
+}
+
+export interface HexStyle {
+    fill: string;
+    stroke: string;
+}
+
+export interface MapPalette {
+    open: HexStyle;
+    wall: HexStyle;
 }
