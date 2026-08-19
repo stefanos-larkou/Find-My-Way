@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Pixel } from "../core/models";
-import { adjacent, createMap } from "../core/grid";
-import { hexToPixel, layoutFor, pixelToHex } from "./geometry";
+import { adjacent, createMap, hexAt } from "../core/grid";
+import { hexToPixel, layoutFor, pixelToHex, roundHex } from "./geometry";
 
 function distance(a: Pixel, b: Pixel): number {
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -25,5 +25,30 @@ describe("pixelToHex", () => {
         const round = pixelToHex(hexToPixel({ q: 3, r: 4 }, view), view);
         expect(round.q).toBeCloseTo(3);
         expect(round.r).toBeCloseTo(4);
+    });
+});
+
+describe("roundHex", () => {
+    it("returns the hex whose centre a pixel falls on", () => {
+        const view = layoutFor(createMap(10, 10), { x: 800, y: 600 });
+        const hex = { q: 4, r: 3 };
+        expect(roundHex(pixelToHex(hexToPixel(hex, view), view))).toEqual(hex);
+    });
+
+    it("resolves every cell in a map from its own centre", () => {
+        const map = createMap(8, 6);
+        const view = layoutFor(map, { x: 800, y: 600 });
+        map.cells.forEach((_, index) => {
+            const hex = hexAt(map, index);
+            expect(roundHex(pixelToHex(hexToPixel(hex, view), view))).toEqual(hex);
+        });
+    });
+
+    it("picks the nearer hex for a pixel between two centres", () => {
+        const view = layoutFor(createMap(10, 10), { x: 800, y: 600 });
+        const left = hexToPixel({ q: 3, r: 3 }, view);
+        const right = hexToPixel({ q: 4, r: 3 }, view);
+        const nearLeft = { x: left.x + (right.x - left.x) * 0.3, y: left.y };
+        expect(roundHex(pixelToHex(nearLeft, view))).toEqual({ q: 3, r: 3 });
     });
 });

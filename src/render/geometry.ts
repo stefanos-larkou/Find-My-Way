@@ -66,3 +66,25 @@ export function hexCorners(centre: Pixel, view: ViewLayout): Pixel[] {
         };
     });
 }
+
+export function roundHex(fractional: FractionalHex): Hex {
+    const x = fractional.q;
+    const z = fractional.r;
+    const y = -x - z;
+
+    const roundedX = Math.round(x);
+    const roundedY = Math.round(y);
+    const roundedZ = Math.round(z);
+
+    const deltaX = Math.abs(roundedX - x);
+    const deltaY = Math.abs(roundedY - y);
+    const deltaZ = Math.abs(roundedZ - z);
+
+    if (deltaX > deltaY && deltaX > deltaZ) return hexOf(-roundedY - roundedZ, roundedZ);
+    if (deltaZ >= deltaY) return hexOf(roundedX, -roundedX - roundedY);
+    return hexOf(roundedX, roundedZ);
+}
+
+function hexOf(q: number, r: number): Hex {
+    return { q: q === 0 ? 0 : q, r: r === 0 ? 0 : r };
+}
