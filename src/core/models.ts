@@ -21,3 +21,10 @@ export interface HexPair {
 export type SearchEvent =
     | { type: "visit"; hex: Hex; }
     | { type: "path"; hexes: Hex[]; };
+
+export interface GenerationOptions {
+    width: number;
+    height: number;
+    cellCount: number;
+    complexity: number;
+}

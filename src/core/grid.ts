@@ -38,13 +38,23 @@ export function isOpen(map: HexMap, hex: Hex): boolean {
     return cellAt(map, hex) === "open";
 }
 
-export function neighbours(map: HexMap, hex: Hex): Hex[] {
+export function adjacent(map: HexMap, hex: Hex): Hex[] {
     return NEIGHBOUR_OFFSETS
         .map(offset => ({ q: hex.q + offset.q, r: hex.r + offset.r }))
-        .filter(next => isOpen(map, next));
+        .filter(next => isInBounds(map, next));
+}
+
+export function neighbours(map: HexMap, hex: Hex): Hex[] {
+    return adjacent(map, hex).filter(next => isOpen(map, next));
 }
 
 export function firstOpenCell(map: HexMap): Hex | undefined {
     const index = map.cells.findIndex(state => state === "open");
     return index < 0 ? undefined : hexAt(map, index);
+}
+
+export function openCells(map: HexMap): Hex[] {
+    return map.cells
+        .map((_, index) => hexAt(map, index))
+        .filter(hex => isOpen(map, hex));
 }
