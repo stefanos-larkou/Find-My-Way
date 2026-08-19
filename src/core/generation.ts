@@ -1,48 +1,56 @@
-import type { GenerationOptions, Hex, HexMap } from "./models";
+import type { GenerationOptions, Hex, HexMap, MapGrowth } from "./models";
 import { BOX_SLACK, BOX_SLACK_PER_COMPLEXITY } from "./constants";
 import { adjacent, cellAt, createMap, indexOf, setCell } from "./grid";
 
+
+
 export function generateMap(options: GenerationOptions, random: () => number): HexMap {
-    const map = createMap(options.width, options.height);
+    const growth: MapGrowth = {
+        map: createMap(options.width, options.height),
+        queued: new Array<boolean>(options.width * options.height).fill(false),
+        frontier: []
+    };
+
     const seed = { q: Math.floor(options.width / 2), r: Math.floor(options.height / 2) };
-    const queued: boolean[] = new Array<boolean>(options.width * options.height).fill(false);
-    const frontier: Hex[] = [];
 
-    function offer(hex: Hex): void {
-        const index = indexOf(map, hex);
-        if (queued[index] || cellAt(map, hex) !== "absent") return;
-
-        queued[index] = true;
-        frontier.push(hex);
-    }
-
-    function expand(hex: Hex): void {
-        shuffled(adjacent(map, hex), random).forEach(offer);
-    }
-
-    setCell(map, seed, "open");
-    expand(seed);
+    setCell(growth.map, seed, "open");
+    expand(growth, seed, random);
 
     let placed = 1;
-    while (placed < options.cellCount && frontier.length > 0) {
-        const pick = random() < options.complexity ? frontier.length - 1 : Math.floor(random() * frontier.length);
+    while (placed < options.cellCount && growth.frontier.length > 0) {
+        const pick = random() < options.complexity ? growth.frontier.length - 1 : Math.floor(random() * growth.frontier.length);
 
-        const hex = frontier[pick] ?? seed;
-        frontier[pick] = frontier[frontier.length - 1] ?? hex;
-        frontier.pop();
+        const hex = growth.frontier[pick] ?? seed;
+        growth.frontier[pick] = growth.frontier[growth.frontier.length - 1] ?? hex;
+        growth.frontier.pop();
 
-        setCell(map, hex, "open");
+        setCell(growth.map, hex, "open");
         placed += 1;
-        expand(hex);
+        expand(growth, hex, random);
     }
 
-    return map;
+    return growth.map;
 }
 
 export function optionsFor(cellCount: number, complexity: number): GenerationOptions {
     const compactSide = Math.ceil(Math.sqrt(cellCount));
     const side = Math.ceil(compactSide * (BOX_SLACK + complexity * BOX_SLACK_PER_COMPLEXITY));
+
     return { width: side, height: side, cellCount, complexity };
+}
+
+function expand(growth: MapGrowth, hex: Hex, random: () => number): void {
+    shuffled(adjacent(growth.map, hex), random).forEach(next => offer(growth, next));
+}
+
+function offer(growth: MapGrowth, hex: Hex): void {
+    const index = indexOf(growth.map, hex);
+    if (growth.queued[index] || cellAt(growth.map, hex) !== "absent") {
+        return;
+    }
+
+    growth.queued[index] = true;
+    growth.frontier.push(hex);
 }
 
 function shuffled(hexes: Hex[], random: () => number): Hex[] {

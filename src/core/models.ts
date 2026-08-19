@@ -28,3 +28,9 @@ export interface GenerationOptions {
     cellCount: number;
     complexity: number;
 }
+
+export interface MapGrowth {
+    map: HexMap;
+    queued: boolean[];
+    frontier: Hex[];
+}
