@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Pixel } from "../core/models";
 import { adjacent, createMap } from "../core/grid";
-import { hexToPixel, pixelToHex } from "./geometry";
+import { hexToPixel, layoutFor, pixelToHex } from "./geometry";
 
 function distance(a: Pixel, b: Pixel): number {
     return Math.hypot(a.x - b.x, a.y - b.y);
@@ -10,9 +10,10 @@ function distance(a: Pixel, b: Pixel): number {
 describe("hexToPixel", () => {
     it("places every neighbour the same distance away", () => {
         const map = createMap(5, 5);
+        const view = layoutFor(createMap(5, 5), { x: 800, y: 600 });
         const centre = { q: 2, r: 2 };
-        const centrePixel = hexToPixel(centre);
-        const distances = adjacent(map, centre).map(hex => distance(centrePixel, hexToPixel(hex)));
+        const centrePixel = hexToPixel(centre, view);
+        const distances = adjacent(map, centre).map(hex => distance(centrePixel, hexToPixel(hex, view)));
         expect(distances).toHaveLength(6);
         distances.forEach(value => expect(value).toBeCloseTo(distances[0] ?? 0));
     });
@@ -20,7 +21,8 @@ describe("hexToPixel", () => {
 
 describe("pixelToHex", () => {
     it("inverts hexToPixel", () => {
-        const round = pixelToHex(hexToPixel({ q: 3, r: 4 }));
+        const view = layoutFor(createMap(5, 5), { x: 800, y: 600 });
+        const round = pixelToHex(hexToPixel({ q: 3, r: 4 }, view), view);
         expect(round.q).toBeCloseTo(3);
         expect(round.r).toBeCloseTo(4);
     });

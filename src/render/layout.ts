@@ -1,17 +1,13 @@
 import { presentCells, indexOf } from "../core/grid";
-import type { HexMap, CellRole, MapPalette, DrawnHex, Pixel } from "../core/models";
-import { hexToPixel, ORIGIN_OFFSET } from "./geometry";
+import type { HexMap, CellRole, MapPalette, DrawnHex, ViewLayout } from "../core/models";
+import { hexCorners, hexToPixel } from "./geometry";
 
-export function hexesToDraw(map: HexMap, roles: CellRole[], palette: MapPalette): DrawnHex[] {
+export function hexesToDraw(map: HexMap, roles: CellRole[], palette: MapPalette, view: ViewLayout): DrawnHex[] {
     return presentCells(map)
         .map(hex => ({ hex, role: roles[indexOf(map, hex)] ?? "open" }))
         .filter(entry => entry.role !== "absent")
         .map(entry => ({
-            centre: offset(hexToPixel(entry.hex)),
+            corners: hexCorners(hexToPixel(entry.hex, view), view),
             style: palette[entry.role === "absent" ? "open" : entry.role]
         }));
-}
-
-function offset(centre: Pixel): Pixel {
-    return { x: centre.x + ORIGIN_OFFSET.x, y: centre.y + ORIGIN_OFFSET.y };
 }

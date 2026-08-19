@@ -49,6 +49,12 @@ export interface Pixel {
     y: number;
 }
 
+export interface ViewLayout {
+    hexSize: number;
+    origin: Pixel;
+    canvas: Pixel;
+}
+
 export interface HexStyle {
     fill: string;
     stroke: string;
@@ -64,6 +70,15 @@ export interface MapPalette {
 }
 
 export interface DrawnHex {
-    centre: Pixel;
+    corners: Pixel[];
     style: HexStyle;
+}
+
+export interface Playback {
+    index: number;
+    playing: boolean;
+    toggle: () => void;
+    step: (direction: number) => void;
+    scrubTo: (index: number) => void;
+    reset: () => void;
 }
