@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, indexOf, isInBounds, neighbours, openCells, sameHex, setCell } from "./grid";
+import { adjacent, cellAt, createMap, hexAt, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, withWalls } from "./grid";
 import { mapFrom } from "./test-maps";
 
 describe("createMap", () => {
@@ -93,5 +93,26 @@ describe("openCells", () => {
             "..."
         ]);
         expect(openCells(map)).toHaveLength(4);
+    });
+});
+
+describe("withWalls", () => {
+    it("turns the listed open cells into walls", () => {
+        const map = mapFrom(["..", ".."]);
+        const walled = withWalls(map, new Set([indexOf(map, { q: 1, r: 0 })]));
+        expect(cellAt(walled, { q: 1, r: 0 })).toBe("wall");
+        expect(cellAt(walled, { q: 0, r: 0 })).toBe("open");
+    });
+
+    it("leaves absent cells alone", () => {
+        const map = mapFrom([". ", ".."]);
+        const walled = withWalls(map, new Set([indexOf(map, { q: 1, r: 0 })]));
+        expect(cellAt(walled, { q: 1, r: 0 })).toBe("absent");
+    });
+
+    it("does not modify the original map", () => {
+        const map = mapFrom(["..", ".."]);
+        withWalls(map, new Set([0]));
+        expect(cellAt(map, { q: 0, r: 0 })).toBe("open");
     });
 });
