@@ -1,16 +1,13 @@
 export type Nullable<T> = T | null | undefined;
 
-export interface Hex {
+export interface FractionalHex {
     q: number;
     r: number;
 }
 
-export type CellState = "absent" | "open" | "wall";
-
-export interface HexMap {
-    width: number;
-    height: number;
-    cells: CellState[];
+export interface Hex {
+    q: number;
+    r: number;
 }
 
 export interface HexPair {
@@ -18,9 +15,21 @@ export interface HexPair {
     end: Hex;
 }
 
-export type SearchEvent =
-    | { type: "visit"; hex: Hex; }
-    | { type: "path"; hexes: Hex[]; };
+export type CellState = "absent" | "open" | "wall";
+export type CellRole = CellState | "visited" | "path" | "start" | "end";
+export type SearchEvent = { type: "visit"; hex: Hex; } | { type: "path"; hexes: Hex[]; };
+
+export interface HexMap {
+    width: number;
+    height: number;
+    cells: CellState[];
+}
+
+export interface Search {
+    events: SearchEvent[];
+    start: Hex;
+    end: Hex;
+}
 
 export interface GenerationOptions {
     width: number;
@@ -33,4 +42,28 @@ export interface MapGrowth {
     map: HexMap;
     queued: boolean[];
     frontier: Hex[];
+}
+
+export interface Pixel {
+    x: number;
+    y: number;
+}
+
+export interface HexStyle {
+    fill: string;
+    stroke: string;
+}
+
+export interface MapPalette {
+    open: HexStyle;
+    wall: HexStyle;
+    visited: HexStyle;
+    path: HexStyle;
+    start: HexStyle;
+    end: HexStyle;
+}
+
+export interface DrawnHex {
+    centre: Pixel;
+    style: HexStyle;
 }

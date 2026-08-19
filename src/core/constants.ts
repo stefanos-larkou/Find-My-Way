@@ -13,3 +13,5 @@ export const UNREACHABLE = -1;
 
 export const BOX_SLACK = 1.5;
 export const BOX_SLACK_PER_COMPLEXITY = 2;
+
+export const HEX_SIZE = 14;
