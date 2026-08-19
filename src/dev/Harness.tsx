@@ -4,6 +4,11 @@ import { createRandom } from "../core/random";
 import { drawMap, prepareCanvas } from "../render/draw";
 import { canvasSize } from "../render/geometry";
 import { LIGHT_PALETTE } from "../render/palette";
+import { rolesAt } from "../render/roles";
+import { breadthFirst } from "../core/algorithms/breadth-first";
+import { furthestApart } from "../core/furthest";
+import type { Search } from "../core/models";
+import { hexesToDraw } from "../render/layout";
 
 export function Harness() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,11 +17,19 @@ export function Harness() {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const map = generateMap(optionsFor(150, 0.5), createRandom(1));
+        const map = generateMap(optionsFor(150, 0.4), createRandom(Date.now()));
         const context = prepareCanvas(canvas, canvasSize(map));
-        if (!context) return;
+        const pair = furthestApart(map);
+        if (!context || !pair) return;
 
-        drawMap(context, map, LIGHT_PALETTE);
+        const search: Search = {
+            events: breadthFirst(map, pair.start, pair.end),
+            start: pair.start,
+            end: pair.end
+        };
+        const roles = rolesAt(map, search, search.events.length - 1);
+
+        drawMap(context, hexesToDraw(map, roles, LIGHT_PALETTE));
     }, []);
 
     return <canvas ref={canvasRef} />;

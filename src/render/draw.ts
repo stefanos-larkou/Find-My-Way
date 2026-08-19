@@ -1,23 +1,5 @@
-import { presentCells, cellAt } from "../core/grid";
-import type { HexMap, HexStyle, MapPalette, Pixel } from "../core/models";
-import { hexCorners, hexToPixel, ORIGIN_OFFSET } from "./geometry";
-
-export function drawHex(context: CanvasRenderingContext2D, centre: Pixel, style: HexStyle): void {
-    const [first, ...rest] = hexCorners(centre);
-    if (!first) {
-        return;
-    }
-
-    context.beginPath();
-    context.moveTo(first.x, first.y);
-    rest.forEach(corner => context.lineTo(corner.x, corner.y));
-    context.closePath();
-
-    context.fillStyle = style.fill;
-    context.fill();
-    context.strokeStyle = style.stroke;
-    context.stroke();
-}
+import type { DrawnHex, HexStyle, Pixel } from "../core/models";
+import { hexCorners } from "./geometry";
 
 export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRenderingContext2D | undefined {
     const context = canvas.getContext("2d");
@@ -33,12 +15,24 @@ export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRen
     return context;
 }
 
-export function drawMap(context: CanvasRenderingContext2D, map: HexMap, palette: MapPalette): void {
+export function drawMap(context: CanvasRenderingContext2D, hexes: DrawnHex[]): void {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    hexes.forEach(hex => drawHex(context, hex.centre, hex.style));
+}
 
-    presentCells(map).forEach(hex => {
-        const centre = hexToPixel(hex);
-        const style = cellAt(map, hex) === "wall" ? palette.wall : palette.open;
-        drawHex(context, { x: centre.x + ORIGIN_OFFSET.x, y: centre.y + ORIGIN_OFFSET.y }, style);
-    });
+function drawHex(context: CanvasRenderingContext2D, centre: Pixel, style: HexStyle): void {
+    const [first, ...rest] = hexCorners(centre);
+    if (!first) {
+        return;
+    }
+
+    context.beginPath();
+    context.moveTo(first.x, first.y);
+    rest.forEach(corner => context.lineTo(corner.x, corner.y));
+    context.closePath();
+
+    context.fillStyle = style.fill;
+    context.fill();
+    context.strokeStyle = style.stroke;
+    context.stroke();
 }
