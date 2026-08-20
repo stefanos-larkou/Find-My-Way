@@ -72,3 +72,9 @@ export function withWalls(map: HexMap, walls: ReadonlySet<number>): HexMap {
         cells: map.cells.map((state, index) => state === "open" && walls.has(index) ? "wall" : state)
     };
 }
+
+export function hexDistance(from: Hex, to: Hex): number {
+    const dq = from.q - to.q;
+    const dr = from.r - to.r;
+    return (Math.abs(dq) + Math.abs(dq + dr) + Math.abs(dr)) / 2;
+}
