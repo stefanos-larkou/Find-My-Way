@@ -264,7 +264,7 @@ export function FindMyWay() {
                     },
                     gridTemplateAreas: {
                         xs: "\"buttons refresh\" \"step step\" \"scrub scrub\"",
-                        md: "\"buttons scrub refresh\" \"step scrub refresh\""
+                        md: "\"buttons scrub refresh\" \"step . .\""
                     },
                     alignItems: "center",
                     gap: 1,
