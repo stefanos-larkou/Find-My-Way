@@ -1,4 +1,5 @@
-import type { MapPalette } from "../core/models";
+import { MIN_WEIGHT, VEIL_STEP } from "../core/constants";
+import type { MapPalette, Nullable } from "../core/models";
 
 export const LIGHT_PALETTE: MapPalette = {
     open: { fill: "#e8eef5", stroke: "#c2cedb" },
@@ -20,4 +21,11 @@ export const DARK_PALETTE: MapPalette = {
 
 export function paletteFor(mode: "light" | "dark"): MapPalette {
     return mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+}
+
+export function veilFor(mode: "light" | "dark", weight: number): Nullable<string> {
+    if (weight <= MIN_WEIGHT) return null;
+
+    const alpha = (weight - MIN_WEIGHT) * VEIL_STEP;
+    return mode === "dark" ? `rgba(255, 255, 255, ${alpha})` : `rgba(15, 23, 33, ${alpha})`;
 }

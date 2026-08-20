@@ -73,6 +73,7 @@ export interface MapPalette {
 export interface DrawnHex {
     corners: Pixel[];
     style: HexStyle;
+    veil: Nullable<string>;
 }
 
 export interface Playback {

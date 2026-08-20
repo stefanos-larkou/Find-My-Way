@@ -30,6 +30,17 @@ function drawHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
 
     context.fillStyle = hex.style.fill;
     context.fill();
+
+    if (hex.veil) {
+        context.fillStyle = hex.veil;
+        context.fill();
+    }
+
     context.strokeStyle = hex.style.stroke;
     context.stroke();
+
+    if (hex.veil) {
+        context.strokeStyle = hex.veil;
+        context.stroke();
+    }
 }

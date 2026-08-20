@@ -1,10 +1,5 @@
 import type { Hex } from "./models";
 
-export const SPEED_KEY = "find-my-way:speed";
-export const CELL_COUNT_KEY = "find-my-way:cell-count";
-export const COMPLEXITY_KEY = "find-my-way:complexity";
-export const STEP_SIZE_KEY = "find-my-way:step-size";
-
 export const NEIGHBOUR_OFFSETS: Hex[] = [
     { q: 1, r: 0 },
     { q: 1, r: -1 },
@@ -47,6 +42,9 @@ export const DEFAULT_COMPLEXITY_SLIDER = 50;
 
 export const MIN_WEIGHT = 1;
 export const MAX_WEIGHT = 3;
+export const WEIGHTS: number[] = Array.from({ length: MAX_WEIGHT - MIN_WEIGHT + 1 }, (_, step) => MIN_WEIGHT + step);
 
 export const HEAVY_SHARE = 0.15;
 export const ROUGH_SHARE = 0.25;
+
+export const VEIL_STEP = 0.1;

@@ -3,15 +3,15 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
-import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
+import { Box, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { MouseEvent, PointerEvent } from "react";
+import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
 import type { Hex, HexMap, HexPair, Search } from "../core/models";
-import { CELL_COUNT_KEY, COMPLEXITY_KEY, CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MIN_CELL_COUNT, MIN_STEP_SIZE, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, SPEED_KEY, STEP_SIZE_KEY, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
+import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
-import { cellAt, indexOf, sameHex, withWalls } from "../core/grid";
+import { cellAt, indexOf, sameHex, withWalls, withWeights } from "../core/grid";
 import { createRandom } from "../core/random";
 import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
@@ -21,39 +21,52 @@ import { usePlayback } from "../hooks/usePlayback";
 import { drawMap, prepareCanvas } from "../render/draw";
 import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
 import { hexesToDraw } from "../render/layout";
-import { paletteFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
+import { WeightBrush } from "./WeightBrush";
 import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
+import { usePersistedFlag } from "../hooks/usePersistedFlag";
+import { usePersistedChoice } from "../hooks/usePersistedChoice";
+import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
 
-type EditMode = "wall" | "start" | "end";
+type EditMode = "wall" | "start" | "end" | "weight";
 type WallStroke = "add" | "remove";
+type Stroke = { kind: "wall"; stroke: WallStroke; } | { kind: "weight"; weight: number; };
 
 const ORIGIN: Hex = { q: 0, r: 0 };
+const EDIT_MODES: EditMode[] = ["wall", "weight", "start", "end"];
+const PLAIN_MODES: EditMode[] = ["wall", "start", "end"];
 
 export function FindMyWay() {
     const theme = useTheme();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const contextRef = useRef<CanvasRenderingContext2D | undefined>(undefined);
     const mapAreaRef = useRef<HTMLDivElement>(null);
-    const strokeRef = useRef<WallStroke | undefined>(undefined);
+    const strokeRef = useRef<Stroke | undefined>(undefined);
     const available = useElementSize(mapAreaRef);
-    const [seed, setSeed] = useState(() => Date.now());
+    const [seed] = useState(() => Date.now());
     const [cellCount, setCellCount] = usePersistedNumber(CELL_COUNT_KEY, DEFAULT_CELL_COUNT, MIN_CELL_COUNT, MAX_CELL_COUNT);
     const [complexitySlider, setComplexitySlider] = usePersistedNumber(COMPLEXITY_KEY, DEFAULT_COMPLEXITY_SLIDER, SLIDER_MIN, SLIDER_MAX);
     const [speedSlider, setSpeedSlider] = usePersistedNumber(SPEED_KEY, DEFAULT_SPEED_SLIDER, SLIDER_MIN, SLIDER_MAX);
     const [stepSize, setStepSize] = usePersistedNumber(STEP_SIZE_KEY, DEFAULT_STEP_SIZE, MIN_STEP_SIZE, MAX_STEP_SIZE);
     const [walls, setWalls] = useState<ReadonlySet<number>>(new Set());
     const [chosen, setChosen] = useState<Partial<HexPair>>({});
-    const [mode, setMode] = useState<EditMode>("wall");
-    const [algorithm, setAlgorithm] = useState<AlgorithmName>("breadth-first");
+    const [terrain, setTerrain] = usePersistedFlag(TERRAIN_KEY, false);
+    const [mode, setMode] = usePersistedChoice<EditMode>(MODE_KEY, "wall", terrain ? EDIT_MODES : PLAIN_MODES);
+    const [algorithm, setAlgorithm] = usePersistedChoice<AlgorithmName>(ALGORITHM_KEY, "breadth-first", ALGORITHM_NAMES);
+    const [paintedWeights, setPaintedWeights] = useState<ReadonlyMap<number, number>>(new Map());
+    const [brush, setBrush] = usePersistedNumber(BRUSH_KEY, MAX_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
 
     const baseMap = useMemo(
         () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
         [cellCount, complexitySlider, seed]
     );
-    const map = useMemo(() => withWalls(baseMap, walls), [baseMap, walls]);
+    const map = useMemo(
+        () => withWeights(withWalls(baseMap, walls), paintedWeights, terrain),
+        [baseMap, walls, paintedWeights, terrain]
+    );
+
     const defaults = useMemo(() => furthestApart(baseMap), [baseMap]);
     const endpoints = useMemo<HexPair>(() => ({
         start: chosen.start ?? defaults?.start ?? ORIGIN,
@@ -65,20 +78,16 @@ export function FindMyWay() {
     const playback = usePlayback(search.events.length, speed);
     const roles = useMemo(() => rolesAt(map, search, playback.index), [map, search, playback.index]);
     const hexes = useMemo(
-        () => hexesToDraw(map, roles, paletteFor(theme.palette.mode), view),
+        () => hexesToDraw(map, roles, view, theme.palette.mode),
         [map, roles, theme.palette.mode, view]
     );
 
     const restart = useCallback(() => {
         setWalls(new Set());
+        setPaintedWeights(new Map());
         setChosen({});
         playback.reset();
     }, [playback]);
-
-    const regenerate = useCallback(() => {
-        setSeed(Date.now());
-        restart();
-    }, [restart]);
 
     const changeCellCount = useCallback((value: number) => {
         setCellCount(value);
@@ -92,12 +101,22 @@ export function FindMyWay() {
 
     const changeMode = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
         if (next) setMode(next);
-    }, []);
+    }, [setMode]);
+
+    const changeTerrain = useCallback((_event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
+        setTerrain(checked);
+        if (!checked) setMode("wall");
+        playback.reset();
+    }, [setTerrain, setMode, playback]);
+
+    const paintWeight = useCallback((hex: Hex, weight: number) => {
+        setPaintedWeights(current => weighted(current, indexOf(baseMap, hex), weight));
+    }, [baseMap]);
 
     const changeAlgorithm = useCallback((event: SelectChangeEvent<AlgorithmName>) => {
         setAlgorithm(event.target.value);
         playback.reset();
-    }, [playback]);
+    }, [setAlgorithm, playback]);
 
     const hexUnder = useCallback((event: PointerEvent<HTMLCanvasElement>): Hex => {
         const bounds = event.currentTarget.getBoundingClientRect();
@@ -118,7 +137,7 @@ export function FindMyWay() {
     const beginStroke = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
         const hex = hexUnder(event);
 
-        if (mode !== "wall") {
+        if (mode === "start" || mode === "end") {
             if (cellAt(map, hex) !== "open") return;
             if (sameHex(hex, mode === "start" ? endpoints.end : endpoints.start)) return;
 
@@ -129,11 +148,20 @@ export function FindMyWay() {
 
         if (!editable(hex)) return;
 
+        if (mode === "weight") {
+            if (cellAt(map, hex) !== "open") return;
+
+            strokeRef.current = { kind: "weight", weight: brush };
+            event.currentTarget.setPointerCapture(event.pointerId);
+            paintWeight(hex, brush);
+            return;
+        }
+
         const stroke: WallStroke = cellAt(map, hex) === "wall" ? "remove" : "add";
-        strokeRef.current = stroke;
+        strokeRef.current = { kind: "wall", stroke };
         event.currentTarget.setPointerCapture(event.pointerId);
         paint(hex, stroke);
-    }, [hexUnder, mode, map, endpoints, editable, paint, playback]);
+    }, [hexUnder, mode, map, endpoints, editable, paint, paintWeight, brush, playback]);
 
     const continueStroke = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
         const stroke = strokeRef.current;
@@ -142,8 +170,13 @@ export function FindMyWay() {
         const hex = hexUnder(event);
         if (!editable(hex)) return;
 
-        paint(hex, stroke);
-    }, [hexUnder, editable, paint]);
+        if (stroke.kind === "weight") {
+            if (cellAt(map, hex) === "open") paintWeight(hex, stroke.weight);
+            return;
+        }
+
+        paint(hex, stroke.stroke);
+    }, [hexUnder, editable, paint, paintWeight, map]);
 
     const endStroke = useCallback(() => {
         if (!strokeRef.current) return;
@@ -216,6 +249,12 @@ export function FindMyWay() {
                     max={SLIDER_MAX}
                     onChange={changeComplexity}
                 />
+                <FormControlLabel
+                    control={<Switch checked={terrain} onChange={changeTerrain} />}
+                    label="Weighted terrain"
+                    labelPlacement="start"
+                    sx={{ alignSelf: "center", mx: 0 }}
+                />
                 <ToggleButtonGroup
                     value={mode}
                     exclusive
@@ -226,9 +265,11 @@ export function FindMyWay() {
                     sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}
                 >
                     <ToggleButton value="wall">Wall</ToggleButton>
+                    {terrain && <ToggleButton value="weight">Weight</ToggleButton>}
                     <ToggleButton value="start">Start</ToggleButton>
                     <ToggleButton value="end">End</ToggleButton>
                 </ToggleButtonGroup>
+                {terrain && <WeightBrush value={brush} disabled={mode !== "weight"} onChange={setBrush} />}
             </Stack>
 
             <Box
@@ -269,7 +310,7 @@ export function FindMyWay() {
                     alignItems: "center",
                     gap: 1,
                     width: "100%",
-                    maxWidth: view.canvas.x > 0 ? Math.max(view.canvas.x, 320) : "100%",
+                    maxWidth: "100%",
                     mx: "auto"
                 }}
             >
@@ -323,8 +364,8 @@ export function FindMyWay() {
                     {eventCounter(playback.index, search.events.length)}
                 </Typography>
 
-                <Tooltip title="New map" placement="top">
-                    <IconButton onClick={regenerate} aria-label="New map" sx={{ gridArea: "refresh", justifySelf: "end" }}>
+                <Tooltip title="Replay" placement="top">
+                    <IconButton onClick={playback.reset} aria-label="Replay" sx={{ gridArea: "refresh", justifySelf: "end" }}>
                         <RefreshIcon />
                     </IconButton>
                 </Tooltip>
@@ -366,4 +407,13 @@ function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
 
 function eventCounter(index: number, eventCount: number): string {
     return `${eventCount === 0 ? 0 : Math.floor(index) + 1} / ${eventCount}`;
+}
+
+function weighted(painted: ReadonlyMap<number, number>, index: number, weight: number): ReadonlyMap<number, number> {
+    if (painted.get(index) === weight) return painted;
+
+    const next = new Map(painted);
+    next.set(index, weight);
+
+    return next;
 }
