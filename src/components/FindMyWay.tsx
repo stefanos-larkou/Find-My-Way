@@ -3,7 +3,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
-import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, type SelectChangeEvent } from "@mui/material";
+import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, PointerEvent } from "react";
@@ -259,12 +259,12 @@ export function FindMyWay() {
                     gridArea: "transport",
                     display: "grid",
                     gridTemplateColumns: {
-                        xs: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr)`,
-                        md: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr) auto`
+                        xs: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr) auto`,
+                        md: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr) auto auto`
                     },
                     gridTemplateAreas: {
-                        xs: "\"buttons refresh\" \"step step\" \"scrub scrub\"",
-                        md: "\"buttons scrub refresh\" \"step . .\""
+                        xs: "\"buttons count refresh\" \"step step step\" \"scrub scrub scrub\"",
+                        md: "\"buttons scrub count refresh\" \"step . . .\""
                     },
                     alignItems: "center",
                     gap: 1,
@@ -300,6 +300,7 @@ export function FindMyWay() {
                     step={0.01}
                     onChange={(_, value) => playback.scrubTo(value)}
                     aria-label="Search progress"
+                    getAriaValueText={value => eventCounter(value, search.events.length)}
                     sx={{
                         gridArea: "scrub",
                         alignSelf: "center",
@@ -308,6 +309,19 @@ export function FindMyWay() {
                         }
                     }}
                 />
+
+                <Typography
+                    variant="body2"
+                    sx={{
+                        gridArea: "count",
+                        ml: 2.5,
+                        color: "text.secondary",
+                        fontVariantNumeric: "tabular-nums",
+                        whiteSpace: "nowrap"
+                    }}
+                >
+                    {eventCounter(playback.index, search.events.length)}
+                </Typography>
 
                 <Tooltip title="New map" placement="top">
                     <IconButton onClick={regenerate} aria-label="New map" sx={{ gridArea: "refresh", justifySelf: "end" }}>
@@ -348,4 +362,8 @@ function painted(walls: ReadonlySet<number>, index: number, stroke: WallStroke):
 
 function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
     return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
+}
+
+function eventCounter(index: number, eventCount: number): string {
+    return `${eventCount === 0 ? 0 : Math.floor(index) + 1} / ${eventCount}`;
 }

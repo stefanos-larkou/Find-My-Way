@@ -61,4 +61,10 @@ describe("FindMyWay", () => {
         await userEvent.click(screen.getByRole("option", { name: label }));
         expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent(label);
     });
+
+    it("shows how far through the events the playback is", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
+        expect(screen.getByText(/^2 \/ \d+$/)).toBeInTheDocument();
+    });
 });
