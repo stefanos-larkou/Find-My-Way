@@ -8,7 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
 import type { Hex, HexMap, HexPair, Search } from "../core/models";
-import { BRUSH_KEY, CELL_COUNT_KEY, COMPLEXITY_KEY, CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
+import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
 import { cellAt, indexOf, sameHex, withWalls, withWeights } from "../core/grid";
@@ -27,12 +27,16 @@ import { NumberField } from "./NumberField";
 import { WeightBrush } from "./WeightBrush";
 import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
+import { usePersistedChoice } from "../hooks/usePersistedChoice";
+import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
 
 type EditMode = "wall" | "start" | "end" | "weight";
 type WallStroke = "add" | "remove";
 type Stroke = { kind: "wall"; stroke: WallStroke; } | { kind: "weight"; weight: number; };
 
 const ORIGIN: Hex = { q: 0, r: 0 };
+const EDIT_MODES: EditMode[] = ["wall", "weight", "start", "end"];
+const PLAIN_MODES: EditMode[] = ["wall", "start", "end"];
 
 export function FindMyWay() {
     const theme = useTheme();
@@ -48,12 +52,11 @@ export function FindMyWay() {
     const [stepSize, setStepSize] = usePersistedNumber(STEP_SIZE_KEY, DEFAULT_STEP_SIZE, MIN_STEP_SIZE, MAX_STEP_SIZE);
     const [walls, setWalls] = useState<ReadonlySet<number>>(new Set());
     const [chosen, setChosen] = useState<Partial<HexPair>>({});
-    const [mode, setMode] = useState<EditMode>("wall");
-    const [algorithm, setAlgorithm] = useState<AlgorithmName>("breadth-first");
-    const [paintedWeights, setPaintedWeights] = useState<ReadonlyMap<number, number>>(new Map());
     const [terrain, setTerrain] = usePersistedFlag(TERRAIN_KEY, false);
+    const [mode, setMode] = usePersistedChoice<EditMode>(MODE_KEY, "wall", terrain ? EDIT_MODES : PLAIN_MODES);
+    const [algorithm, setAlgorithm] = usePersistedChoice<AlgorithmName>(ALGORITHM_KEY, "breadth-first", ALGORITHM_NAMES);
+    const [paintedWeights, setPaintedWeights] = useState<ReadonlyMap<number, number>>(new Map());
     const [brush, setBrush] = usePersistedNumber(BRUSH_KEY, MAX_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
-
 
     const baseMap = useMemo(
         () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
@@ -98,23 +101,22 @@ export function FindMyWay() {
 
     const changeMode = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
         if (next) setMode(next);
-    }, []);
+    }, [setMode]);
 
     const changeTerrain = useCallback((_event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
         setTerrain(checked);
         if (!checked) setMode("wall");
         playback.reset();
-    }, [setTerrain, playback]);
+    }, [setTerrain, setMode, playback]);
 
     const paintWeight = useCallback((hex: Hex, weight: number) => {
         setPaintedWeights(current => weighted(current, indexOf(baseMap, hex), weight));
     }, [baseMap]);
 
-
     const changeAlgorithm = useCallback((event: SelectChangeEvent<AlgorithmName>) => {
         setAlgorithm(event.target.value);
         playback.reset();
-    }, [playback]);
+    }, [setAlgorithm, playback]);
 
     const hexUnder = useCallback((event: PointerEvent<HTMLCanvasElement>): Hex => {
         const bounds = event.currentTarget.getBoundingClientRect();

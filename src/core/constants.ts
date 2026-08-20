@@ -1,12 +1,5 @@
 import type { Hex } from "./models";
 
-export const SPEED_KEY = "find-my-way:speed";
-export const CELL_COUNT_KEY = "find-my-way:cell-count";
-export const COMPLEXITY_KEY = "find-my-way:complexity";
-export const STEP_SIZE_KEY = "find-my-way:step-size";
-export const TERRAIN_KEY = "find-my-way:terrain";
-export const BRUSH_KEY = "find-my-way:brush";
-
 export const NEIGHBOUR_OFFSETS: Hex[] = [
     { q: 1, r: 0 },
     { q: 1, r: -1 },

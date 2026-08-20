@@ -14,6 +14,7 @@ function renderVisualiser() {
 }
 
 beforeEach(() => {
+    localStorage.clear();
     vi.stubGlobal("requestAnimationFrame", () => 0);
     vi.stubGlobal("cancelAnimationFrame", () => undefined);
 });
@@ -96,6 +97,32 @@ describe("FindMyWay", () => {
         await userEvent.click(screen.getByRole("button", { name: "Weight" }));
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
         expect(screen.getByRole("button", { name: "Wall" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("remembers the chosen algorithm across a remount", async () => {
+        const { label } = ALGORITHMS["dijkstra"];
+        const { unmount } = render(
+            <ThemeProvider theme={createTheme()}>
+                <FindMyWay />
+            </ThemeProvider>
+        );
+        await userEvent.click(screen.getByRole("combobox", { name: "Algorithm" }));
+        await userEvent.click(screen.getByRole("option", { name: label }));
+        unmount();
+        renderVisualiser();
+        expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent(label);
+    });
+
+    it("remembers what a click places across a remount", async () => {
+        const { unmount } = render(
+            <ThemeProvider theme={createTheme()}>
+                <FindMyWay />
+            </ThemeProvider>
+        );
+        await userEvent.click(screen.getByRole("button", { name: "Start" }));
+        unmount();
+        renderVisualiser();
+        expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-pressed", "true");
     });
 
 });
