@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_EVENTS_PER_SECOND, MIN_EVENTS_PER_SECOND } from "./constants";
+import { MAX_COMPLEXITY, MAX_EVENTS_PER_SECOND, MIN_EVENTS_PER_SECOND } from "./constants";
 import { complexityFrom, speedFrom, withinRange } from "./scales";
 
 describe("withinRange", () => {
@@ -15,10 +15,10 @@ describe("withinRange", () => {
 });
 
 describe("complexityFrom", () => {
-    it("maps the slider range onto 0 to 1", () => {
+    it("maps the slider range onto the range that changes the shape", () => {
         expect(complexityFrom(1)).toBeCloseTo(0);
-        expect(complexityFrom(100)).toBeCloseTo(1);
-        expect(complexityFrom(50.5)).toBeCloseTo(0.5);
+        expect(complexityFrom(100)).toBeCloseTo(MAX_COMPLEXITY);
+        expect(complexityFrom(50.5)).toBeCloseTo(MAX_COMPLEXITY / 2);
     });
 });
 

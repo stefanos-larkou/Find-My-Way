@@ -12,6 +12,7 @@ export const NEIGHBOUR_OFFSETS: Hex[] = [
 export const UNREACHABLE = -1;
 
 export const WINDING_SHARE = 0.7;
+export const MAX_COMPLEXITY = 0.85;
 
 export const BOX_SLACK = 1.5;
 export const BOX_SLACK_PER_COMPLEXITY = 2;

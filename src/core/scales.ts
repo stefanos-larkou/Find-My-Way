@@ -1,4 +1,4 @@
-import { MAX_EVENTS_PER_SECOND, MIN_EVENTS_PER_SECOND, SLIDER_MAX, SLIDER_MIN } from "./constants";
+import { MAX_COMPLEXITY, MAX_EVENTS_PER_SECOND, MIN_EVENTS_PER_SECOND, SLIDER_MAX, SLIDER_MIN } from "./constants";
 
 export function withinRange(value: number, min: number, max: number): number {
     if (Number.isNaN(value)) return min;
@@ -10,7 +10,7 @@ export function fraction(slider: number): number {
 }
 
 export function complexityFrom(slider: number): number {
-    return fraction(slider);
+    return fraction(slider) * MAX_COMPLEXITY;
 }
 
 export function speedFrom(slider: number): number {
