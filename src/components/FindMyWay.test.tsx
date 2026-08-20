@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FindMyWay } from "./FindMyWay";
+import { ALGORITHMS } from "../core/algorithms/registry";
 
 function renderVisualiser() {
     render(
@@ -54,9 +55,10 @@ describe("FindMyWay", () => {
     });
 
     it("lets the user choose an algorithm", async () => {
+        const { label } = ALGORITHMS["depth-first"];
         renderVisualiser();
         await userEvent.click(screen.getByRole("combobox", { name: "Algorithm" }));
-        await userEvent.click(screen.getByRole("option", { name: "Depth-first" }));
-        expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent("Depth-first");
+        await userEvent.click(screen.getByRole("option", { name: label }));
+        expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent(label);
     });
 });
