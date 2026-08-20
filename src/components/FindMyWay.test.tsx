@@ -70,6 +70,13 @@ describe("FindMyWay", () => {
         expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent(label);
     });
 
+    it("gives the counter's place to the outcome once the search has played out", () => {
+        renderVisualiser();
+        const slider = screen.getByRole("slider", { name: "Search progress" });
+        fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
+        expect(screen.queryByText(/^\d+ \/ \d+$/)).not.toBeInTheDocument();
+    });
+
     it("shows how far through the events the playback is", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
@@ -105,21 +112,21 @@ describe("FindMyWay", () => {
         renderVisualiser();
         const slider = screen.getByRole("slider", { name: "Search progress" });
         fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
-        expect(screen.getByText(/^(\d+ steps|No route)$/)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^\d+ steps$/)).toBeInTheDocument();
     });
 
     it("shows no outcome before the search has played out", () => {
         renderVisualiser();
-        expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/^\d+ steps$/)).not.toBeInTheDocument();
     });
 
     it("shows no outcome until the playback has been started", async () => {
         renderVisualiser();
         const slider = screen.getByRole("slider", { name: "Search progress" });
         fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
-        expect(screen.getByText(/^(\d+ steps|No route)$/)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^\d+ steps$/)).toBeInTheDocument();
         await userEvent.click(screen.getByRole("button", { name: "Replay" }));
-        expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/^\d+ steps$/)).not.toBeInTheDocument();
     });
 
     it("reports what the route cost once terrain is on", async () => {
@@ -127,7 +134,7 @@ describe("FindMyWay", () => {
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
         const slider = screen.getByRole("slider", { name: "Search progress" });
         fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
-        expect(screen.getByText(/^\d+ steps, cost \d+$/)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^\d+ cost$/)).toBeInTheDocument();
     });
 
     it("offers to clear walls only while placing walls", async () => {

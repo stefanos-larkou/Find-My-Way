@@ -7,7 +7,7 @@ import { Box, Button, FormControl, FormControlLabel, IconButton, InputLabel, Men
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
-import type { Hex, HexMap, HexPair, Outcome, Search, WallStroke } from "../core/models";
+import type { Hex, HexMap, HexPair, Search, WallStroke } from "../core/models";
 import { outcomeOf } from "../core/outcome";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, EMPTY_INDEX, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH, WEIGHTS } from "../core/constants";
 import { furthestApart } from "../core/furthest";
@@ -27,6 +27,7 @@ import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
 import { HexSwatch } from "./HexSwatch";
+import { RouteSummary } from "./RouteSummary";
 import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
 import { usePersistedChoice } from "../hooks/usePersistedChoice";
@@ -56,8 +57,7 @@ const LABELS = {
     replay: "Replay",
     play: "Play",
     pause: "Pause",
-    stepSize: "Step size",
-    noRoute: "No route"
+    stepSize: "Step size"
 };
 
 const HINTS = {
@@ -493,31 +493,25 @@ export function FindMyWay() {
                     />
                 </Stack>
 
-                <Tooltip describeChild title={HINTS.counter} placement="top">
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            color: "text.secondary",
-                            fontVariantNumeric: "tabular-nums",
-                            whiteSpace: "nowrap",
-                            cursor: "help"
-                        }}
-                    >
-                        {eventCounter(playback.index, search.events.length)}
-                    </Typography>
-                </Tooltip>
-
-                <Typography
-                    variant="h6"
-                    sx={{
-                        minHeight: "1.6em",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        color: outcome.found ? "success.main" : "error.main"
-                    }}
-                >
-                    {finished ? outcomeText(outcome, terrain) : ""}
-                </Typography>
+                <Box sx={{ minHeight: "2.25em", display: "flex", alignItems: "center" }}>
+                    {finished ? (
+                        <RouteSummary outcome={outcome} terrain={terrain} />
+                    ) : (
+                        <Tooltip describeChild title={HINTS.counter} placement="top">
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    color: "text.secondary",
+                                    fontVariantNumeric: "tabular-nums",
+                                    whiteSpace: "nowrap",
+                                    cursor: "help"
+                                }}
+                            >
+                                {eventCounter(playback.index, search.events.length)}
+                            </Typography>
+                        </Tooltip>
+                    )}
+                </Box>
             </Box>
         </Box>
     );
@@ -534,11 +528,6 @@ function stepLabel(steps: number): string {
 
 function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
     return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
-}
-
-function outcomeText(outcome: Outcome, terrain: boolean): string {
-    if (!outcome.found) return LABELS.noRoute;
-    return terrain ? `${outcome.steps} steps, cost ${outcome.cost}` : `${outcome.steps} steps`;
 }
 
 function eventCounter(index: number, eventCount: number): string {
