@@ -23,6 +23,13 @@ afterEach(() => {
 });
 
 describe("FindMyWay", () => {
+    it("returns the playback to the start when replayed", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
+        await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+        expect(screen.getByRole("slider", { name: "Search progress" })).toHaveAttribute("aria-valuenow", "0");
+    });
+
     it("offers to play and then to pause", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Play" }));
@@ -67,4 +74,28 @@ describe("FindMyWay", () => {
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
         expect(screen.getByText(/^2 \/ \d+$/)).toBeInTheDocument();
     });
+
+    it("offers the weight tool only once terrain is switched on", async () => {
+        renderVisualiser();
+        expect(screen.queryByRole("button", { name: "Weight" })).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        expect(screen.getByRole("button", { name: "Weight" })).toBeInTheDocument();
+    });
+
+    it("enables the weight brush only once the weight tool is chosen", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        expect(screen.getByRole("button", { name: "Weight 3" })).toBeDisabled();
+        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+        expect(screen.getByRole("button", { name: "Weight 3" })).toBeEnabled();
+    });
+
+    it("returns to placing walls when terrain is switched off", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        expect(screen.getByRole("button", { name: "Wall" })).toHaveAttribute("aria-pressed", "true");
+    });
+
 });
