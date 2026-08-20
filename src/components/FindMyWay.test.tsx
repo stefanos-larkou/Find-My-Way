@@ -52,4 +52,11 @@ describe("FindMyWay", () => {
         await userEvent.click(screen.getByRole("button", { name: "Start" }));
         expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-pressed", "true");
     });
+
+    it("lets the user choose an algorithm", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("combobox", { name: "Algorithm" }));
+        await userEvent.click(screen.getByRole("option", { name: "Depth-first" }));
+        expect(screen.getByRole("combobox", { name: "Algorithm" })).toHaveTextContent("Depth-first");
+    });
 });

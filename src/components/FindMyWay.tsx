@@ -3,13 +3,12 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
-import { Box, IconButton, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { Box, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, ToggleButton, ToggleButtonGroup, Tooltip, type SelectChangeEvent } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, PointerEvent } from "react";
 import type { Hex, HexMap, HexPair, Search } from "../core/models";
-import { CELL_COUNT_KEY, COMPLEXITY_KEY, CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MIN_CELL_COUNT, MIN_STEP_SIZE, SLIDER_MAX, SLIDER_MIN, SPEED_KEY, STEP_SIZE_KEY, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
-import { breadthFirst } from "../core/algorithms/breadth-first";
+import { CELL_COUNT_KEY, COMPLEXITY_KEY, CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MIN_CELL_COUNT, MIN_STEP_SIZE, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, SPEED_KEY, STEP_SIZE_KEY, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
 import { cellAt, indexOf, sameHex, withWalls } from "../core/grid";
@@ -26,6 +25,7 @@ import { paletteFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
+import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
 
 type EditMode = "wall" | "start" | "end";
 type WallStroke = "add" | "remove";
@@ -47,6 +47,7 @@ export function FindMyWay() {
     const [walls, setWalls] = useState<ReadonlySet<number>>(new Set());
     const [chosen, setChosen] = useState<Partial<HexPair>>({});
     const [mode, setMode] = useState<EditMode>("wall");
+    const [algorithm, setAlgorithm] = useState<AlgorithmName>("breadth-first");
 
     const baseMap = useMemo(
         () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
@@ -58,7 +59,7 @@ export function FindMyWay() {
         start: chosen.start ?? defaults?.start ?? ORIGIN,
         end: chosen.end ?? defaults?.end ?? ORIGIN
     }), [chosen, defaults]);
-    const search = useMemo(() => searchOn(map, endpoints), [map, endpoints]);
+    const search = useMemo(() => searchOn(map, endpoints, ALGORITHMS[algorithm].search), [map, endpoints, algorithm]);
     const view = useMemo(() => layoutFor(baseMap, available), [baseMap, available]);
     const speed = useMemo(() => speedFrom(speedSlider), [speedSlider]);
     const playback = usePlayback(search.events.length, speed);
@@ -92,6 +93,11 @@ export function FindMyWay() {
     const changeMode = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
         if (next) setMode(next);
     }, []);
+
+    const changeAlgorithm = useCallback((event: SelectChangeEvent<AlgorithmName>) => {
+        setAlgorithm(event.target.value);
+        playback.reset();
+    }, [playback]);
 
     const hexUnder = useCallback((event: PointerEvent<HTMLCanvasElement>): Hex => {
         const bounds = event.currentTarget.getBoundingClientRect();
@@ -176,6 +182,19 @@ export function FindMyWay() {
             }}
         >
             <Stack spacing={2} sx={{ gridArea: "params", width: "100%", alignSelf: "center" }}>
+                <FormControl size="small" fullWidth>
+                    <InputLabel id="algorithm-label">Algorithm</InputLabel>
+                    <Select<AlgorithmName>
+                        labelId="algorithm-label"
+                        label="Algorithm"
+                        value={algorithm}
+                        onChange={changeAlgorithm}
+                    >
+                        {ALGORITHM_NAMES.map(name => (
+                            <MenuItem key={name} value={name}>{ALGORITHMS[name].label}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
                 <ControlSlider
                     label="Speed"
                     value={speedSlider}
@@ -203,7 +222,8 @@ export function FindMyWay() {
                     size="small"
                     onChange={changeMode}
                     aria-label="What a click places"
-                    sx={{ alignSelf: "center" }}
+                    fullWidth
+                    sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}
                 >
                     <ToggleButton value="wall">Wall</ToggleButton>
                     <ToggleButton value="start">Start</ToggleButton>
@@ -326,6 +346,6 @@ function painted(walls: ReadonlySet<number>, index: number, stroke: WallStroke):
     return next;
 }
 
-function searchOn(map: HexMap, pair: HexPair): Search {
-    return { events: breadthFirst(map, pair.start, pair.end), start: pair.start, end: pair.end };
+function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
+    return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
 }

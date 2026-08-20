@@ -33,6 +33,7 @@ export const MAX_HEX_SIZE = 36;
 export const CONTROLS_WIDTH = 460;
 
 export const TRANSPORT_BUTTONS_WIDTH = 136;
+export const MODE_GROUP_WIDTH = 264;
 
 export const DEFAULT_STEP_SIZE = 1;
 export const MIN_STEP_SIZE = 1;
