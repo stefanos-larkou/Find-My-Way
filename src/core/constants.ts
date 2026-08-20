@@ -30,6 +30,8 @@ export const MIN_CELL_COUNT = 30;
 export const MAX_CELL_COUNT = 3000;
 
 export const MAX_HEX_SIZE = 36;
+export const ROUTE_WIDTH_SHARE = 0.28;
+export const MIN_ROUTE_WIDTH = 3;
 export const CONTROLS_WIDTH = 460;
 
 export const TRANSPORT_BUTTONS_WIDTH = 136;

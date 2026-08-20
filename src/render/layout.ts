@@ -1,8 +1,8 @@
-import { MAX_WEIGHT } from "../core/constants";
+import { MAX_WEIGHT, MIN_ROUTE_WIDTH, ROUTE_WIDTH_SHARE } from "../core/constants";
 import { presentCells, indexOf, weightAt } from "../core/grid";
-import type { HexMap, CellRole, DrawnHex, ViewLayout } from "../core/models";
+import type { Hex, HexMap, CellRole, DrawnHex, DrawnSegment, ViewLayout } from "../core/models";
 import { hexCorners, hexToPixel } from "./geometry";
-import { paletteFor, strokeVeilFor, veilFor } from "./palette";
+import { mixColours, paletteFor, strokeVeilFor, veilFor } from "./palette";
 
 export function hexesToDraw(map: HexMap, roles: CellRole[], view: ViewLayout, mode: "light" | "dark"): DrawnHex[] {
     const palette = paletteFor(mode);
@@ -18,6 +18,21 @@ export function hexesToDraw(map: HexMap, roles: CellRole[], view: ViewLayout, mo
             borderRank: borderRankOf(entry.role, weightAt(map, entry.hex))
         }))
         .sort((first, second) => first.borderRank - second.borderRank);
+}
+
+export function routeToDraw(path: Hex[], view: ViewLayout, mode: "light" | "dark"): DrawnSegment[] {
+    const palette = paletteFor(mode);
+    const steps = path.length - 1;
+
+    return path.slice(1).map((hex, step) => ({
+        from: hexToPixel(path[step] ?? hex, view),
+        to: hexToPixel(hex, view),
+        colour: mixColours(palette.start.fill, palette.end.fill, (step + 1) / steps)
+    }));
+}
+
+export function routeWidthFor(hexSize: number): number {
+    return Math.max(hexSize * ROUTE_WIDTH_SHARE, MIN_ROUTE_WIDTH);
 }
 
 export function borderRankOf(role: CellRole, weight: number): number {

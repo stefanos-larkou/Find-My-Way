@@ -8,7 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
 import type { Hex, HexMap, HexPair, Search, WallStroke } from "../core/models";
-import { outcomeOf } from "../core/outcome";
+import { outcomeOf, pathAt } from "../core/outcome";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, EMPTY_INDEX, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH, WEIGHTS } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
@@ -19,9 +19,9 @@ import { lastIndex } from "../hooks/playback";
 import { useElementSize } from "../hooks/useElementSize";
 import { usePersistedNumber } from "../hooks/usePersistedNumber";
 import { usePlayback } from "../hooks/usePlayback";
-import { drawMap, prepareCanvas } from "../render/draw";
+import { drawMap, drawRoute, prepareCanvas } from "../render/draw";
 import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
-import { hexesToDraw } from "../render/layout";
+import { hexesToDraw, routeToDraw, routeWidthFor } from "../render/layout";
 import { paletteFor, veilFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
@@ -120,6 +120,8 @@ export function FindMyWay() {
         [map, roles, theme.palette.mode, view]
     );
     const palette = useMemo(() => paletteFor(theme.palette.mode), [theme.palette.mode]);
+    const revealed = useMemo(() => pathAt(search.events, playback.index), [search.events, playback.index]);
+    const route = useMemo(() => routeToDraw(revealed, view, theme.palette.mode), [revealed, view, theme.palette.mode]);
     const outcome = useMemo(() => outcomeOf(map, search.events), [map, search.events]);
     const finished = playback.started && search.events.length > 0 && playback.index >= lastIndex(search.events.length);
 
@@ -272,7 +274,8 @@ export function FindMyWay() {
         const context = contextRef.current;
         if (!context) return;
         drawMap(context, hexes);
-    }, [hexes]);
+        drawRoute(context, route, routeWidthFor(view.hexSize));
+    }, [hexes, route, view]);
 
     return (
         <Box

@@ -9,6 +9,10 @@ export function pathOf(events: SearchEvent[]): Hex[] {
     return [];
 }
 
+export function pathAt(events: SearchEvent[], index: number): Hex[] {
+    return pathOf(events.slice(0, Math.floor(index) + 1));
+}
+
 export function costOf(map: HexMap, path: Hex[]): number {
     return path.slice(1).reduce((total, hex) => total + weightAt(map, hex), 0);
 }

@@ -1,4 +1,4 @@
-import type { DrawnHex, Pixel } from "../core/models";
+import type { DrawnHex, DrawnSegment, Pixel } from "../core/models";
 
 export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRenderingContext2D | undefined {
     const context = canvas.getContext("2d");
@@ -18,6 +18,22 @@ export function drawMap(context: CanvasRenderingContext2D, hexes: DrawnHex[]): v
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
     hexes.forEach(hex => fillHex(context, hex));
     hexes.forEach(hex => strokeHex(context, hex));
+}
+
+export function drawRoute(context: CanvasRenderingContext2D, segments: DrawnSegment[], width: number): void {
+    context.lineWidth = width;
+    context.lineCap = "round";
+
+    segments.forEach(segment => {
+        context.beginPath();
+        context.moveTo(segment.from.x, segment.from.y);
+        context.lineTo(segment.to.x, segment.to.y);
+        context.strokeStyle = segment.colour;
+        context.stroke();
+    });
+
+    context.lineWidth = 1;
+    context.lineCap = "butt";
 }
 
 function tracePath(context: CanvasRenderingContext2D, hex: DrawnHex): boolean {

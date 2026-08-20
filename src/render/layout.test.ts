@@ -1,13 +1,48 @@
 import { describe, expect, it } from "vitest";
 import { mapFrom } from "../core/test-maps";
 import { layoutFor } from "./geometry";
-import { hexesToDraw } from "./layout";
-import { LIGHT_PALETTE } from "./palette";
+import { hexesToDraw, routeToDraw, routeWidthFor } from "./layout";
+import { LIGHT_PALETTE, mixColours } from "./palette";
 import { rolesAt } from "./roles";
-import { MAX_WEIGHT } from "../core/constants";
+import { MAX_WEIGHT, MIN_ROUTE_WIDTH } from "../core/constants";
 import { setWeight } from "../core/grid";
 
 const AVAILABLE = { x: 800, y: 600 };
+
+describe("routeWidthFor", () => {
+    it("scales the line with the hexes", () => {
+        expect(routeWidthFor(40)).toBeGreaterThan(routeWidthFor(20));
+    });
+
+    it("never draws thinner than the floor", () => {
+        expect(routeWidthFor(1)).toBe(MIN_ROUTE_WIDTH);
+        expect(routeWidthFor(0)).toBe(MIN_ROUTE_WIDTH);
+    });
+});
+
+describe("routeToDraw", () => {
+    const view = layoutFor(mapFrom(["...."]), AVAILABLE);
+    const path = [{ q: 0, r: 0 }, { q: 1, r: 0 }, { q: 2, r: 0 }, { q: 3, r: 0 }];
+
+    it("draws one segment between each pair of cells", () => {
+        expect(routeToDraw(path, view, "light")).toHaveLength(path.length - 1);
+    });
+
+    it("draws nothing when there is no route", () => {
+        expect(routeToDraw([], view, "light")).toEqual([]);
+    });
+
+    it("shades from the start colour towards the end colour", () => {
+        const segments = routeToDraw(path, view, "light");
+        expect(segments.at(-1)?.colour).toBe(mixColours(LIGHT_PALETTE.start.fill, LIGHT_PALETTE.end.fill, 1));
+        expect(segments[0]?.colour).not.toBe(segments.at(-1)?.colour);
+    });
+
+    it("joins each cell to the one before it", () => {
+        const segments = routeToDraw(path, view, "light");
+        expect(segments[1]?.from).toEqual(segments[0]?.to);
+    });
+});
 
 describe("hexesToDraw", () => {
     it("skips absent cells", () => {

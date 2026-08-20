@@ -86,6 +86,12 @@ export interface DrawnHex {
     borderRank: number;
 }
 
+export interface DrawnSegment {
+    from: Pixel;
+    to: Pixel;
+    colour: string;
+}
+
 export interface Playback {
     index: number;
     playing: boolean;

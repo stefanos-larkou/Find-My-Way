@@ -31,6 +31,19 @@ export function strokeVeilFor(mode: "light" | "dark", weight: number): Nullable<
     return veilAt(mode, Math.min((weight - MIN_WEIGHT) * VEIL_STEP * STROKE_VEIL_FACTOR, 1));
 }
 
+export function mixColours(from: string, to: string, ratio: number): string {
+    const held = Math.min(Math.max(ratio, 0), 1);
+    const start = channelsOf(from);
+    const end = channelsOf(to);
+    const channels = [0, 1, 2].map(channel => Math.round((start[channel] ?? 0) + ((end[channel] ?? 0) - (start[channel] ?? 0)) * held));
+
+    return `rgb(${channels.join(", ")})`;
+}
+
+function channelsOf(colour: string): number[] {
+    return [0, 1, 2].map(channel => Number.parseInt(colour.slice(1 + channel * 2, 3 + channel * 2), 16));
+}
+
 function veilAt(mode: "light" | "dark", alpha: number): Nullable<string> {
     if (alpha <= 0) return null;
     return mode === "dark" ? `rgba(196, 181, 253, ${alpha})` : `rgba(88, 61, 168, ${alpha})`;
