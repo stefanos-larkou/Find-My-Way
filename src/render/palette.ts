@@ -1,22 +1,22 @@
-import { MIN_WEIGHT, VEIL_STEP } from "../core/constants";
+import { MIN_WEIGHT, STROKE_VEIL_FACTOR, VEIL_STEP } from "../core/constants";
 import type { MapPalette, Nullable } from "../core/models";
 
 export const LIGHT_PALETTE: MapPalette = {
-    open: { fill: "#e8eef5", stroke: "#c2cedb" },
-    wall: { fill: "#3f4854", stroke: "#2c333c" },
-    visited: { fill: "#bcd8f2", stroke: "#8fb8dd" },
-    path: { fill: "#f2a900", stroke: "#c98c00" },
-    start: { fill: "#2e9e5b", stroke: "#237a46" },
-    end: { fill: "#d64545", stroke: "#ab3636" }
+    open: { fill: "#eceff3", stroke: "#cdd4dd" },
+    wall: { fill: "#2c3644", stroke: "#171e28" },
+    visited: { fill: "#9fc5e8", stroke: "#6f9fcb" },
+    path: { fill: "#f5a524", stroke: "#c07c0d" },
+    start: { fill: "#0e9f6e", stroke: "#07704c" },
+    end: { fill: "#d6337f", stroke: "#a02460" }
 };
 
 export const DARK_PALETTE: MapPalette = {
-    open: { fill: "#262d36", stroke: "#39424e" },
-    wall: { fill: "#7f8b99", stroke: "#9aa6b4" },
-    visited: { fill: "#1f4468", stroke: "#2c5c8a" },
-    path: { fill: "#ffc94d", stroke: "#d9a52f" },
-    start: { fill: "#3ecf7a", stroke: "#2ea55f" },
-    end: { fill: "#ff6b6b", stroke: "#d35050" }
+    open: { fill: "#222831", stroke: "#39424e" },
+    wall: { fill: "#cbd3de", stroke: "#eef2f7" },
+    visited: { fill: "#2f6193", stroke: "#4b86bd" },
+    path: { fill: "#ffbf3d", stroke: "#d99a25" },
+    start: { fill: "#2fd39b", stroke: "#17a87a" },
+    end: { fill: "#f472b6", stroke: "#c94e92" }
 };
 
 export function paletteFor(mode: "light" | "dark"): MapPalette {
@@ -24,8 +24,14 @@ export function paletteFor(mode: "light" | "dark"): MapPalette {
 }
 
 export function veilFor(mode: "light" | "dark", weight: number): Nullable<string> {
-    if (weight <= MIN_WEIGHT) return null;
+    return veilAt(mode, (weight - MIN_WEIGHT) * VEIL_STEP);
+}
 
-    const alpha = (weight - MIN_WEIGHT) * VEIL_STEP;
-    return mode === "dark" ? `rgba(255, 255, 255, ${alpha})` : `rgba(15, 23, 33, ${alpha})`;
+export function strokeVeilFor(mode: "light" | "dark", weight: number): Nullable<string> {
+    return veilAt(mode, Math.min((weight - MIN_WEIGHT) * VEIL_STEP * STROKE_VEIL_FACTOR, 1));
+}
+
+function veilAt(mode: "light" | "dark", alpha: number): Nullable<string> {
+    if (alpha <= 0) return null;
+    return mode === "dark" ? `rgba(196, 181, 253, ${alpha})` : `rgba(88, 61, 168, ${alpha})`;
 }

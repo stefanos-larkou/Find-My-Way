@@ -16,17 +16,24 @@ export function prepareCanvas(canvas: HTMLCanvasElement, size: Pixel): CanvasRen
 
 export function drawMap(context: CanvasRenderingContext2D, hexes: DrawnHex[]): void {
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    hexes.forEach(hex => drawHex(context, hex));
+    hexes.forEach(hex => fillHex(context, hex));
+    hexes.forEach(hex => strokeHex(context, hex));
 }
 
-function drawHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
+function tracePath(context: CanvasRenderingContext2D, hex: DrawnHex): boolean {
     const [first, ...rest] = hex.corners;
-    if (!first) return;
+    if (!first) return false;
 
     context.beginPath();
     context.moveTo(first.x, first.y);
     rest.forEach(corner => context.lineTo(corner.x, corner.y));
     context.closePath();
+
+    return true;
+}
+
+function fillHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
+    if (!tracePath(context, hex)) return;
 
     context.fillStyle = hex.style.fill;
     context.fill();
@@ -35,12 +42,16 @@ function drawHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
         context.fillStyle = hex.veil;
         context.fill();
     }
+}
+
+function strokeHex(context: CanvasRenderingContext2D, hex: DrawnHex): void {
+    if (!tracePath(context, hex)) return;
 
     context.strokeStyle = hex.style.stroke;
     context.stroke();
 
-    if (hex.veil) {
-        context.strokeStyle = hex.veil;
+    if (hex.strokeVeil) {
+        context.strokeStyle = hex.strokeVeil;
         context.stroke();
     }
 }

@@ -82,6 +82,8 @@ export interface DrawnHex {
     corners: Pixel[];
     style: HexStyle;
     veil: Nullable<string>;
+    strokeVeil: Nullable<string>;
+    borderRank: number;
 }
 
 export interface Playback {

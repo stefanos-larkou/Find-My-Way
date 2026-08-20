@@ -35,6 +35,13 @@ describe("hexesToDraw", () => {
         expect(drawn[1]?.veil).not.toBeNull();
     });
 
+    it("orders heavier ground after lighter, and endpoints after both", () => {
+        const map = mapFrom(["1231"]);
+        const search = { events: [], start: { q: 0, r: 0 }, end: { q: 3, r: 0 } };
+        const drawn = hexesToDraw(map, rolesAt(map, search, -1), layoutFor(map, AVAILABLE), "light");
+        expect(drawn.map(hex => hex.borderRank)).toEqual([2, 3, MAX_WEIGHT + 2, MAX_WEIGHT + 2]);
+    });
+
     it("never veils a wall", () => {
         const map = mapFrom(["#."]);
         setWeight(map, { q: 0, r: 0 }, MAX_WEIGHT);

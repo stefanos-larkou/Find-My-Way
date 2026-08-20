@@ -47,4 +47,5 @@ export const WEIGHTS: number[] = Array.from({ length: MAX_WEIGHT - MIN_WEIGHT + 
 export const HEAVY_SHARE = 0.15;
 export const ROUGH_SHARE = 0.25;
 
-export const VEIL_STEP = 0.1;
+export const VEIL_STEP = 0.25;
+export const STROKE_VEIL_FACTOR = 1.7;
