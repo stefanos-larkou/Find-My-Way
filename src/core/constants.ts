@@ -50,3 +50,5 @@ export const MAX_WEIGHT = 3;
 
 export const HEAVY_SHARE = 0.15;
 export const ROUGH_SHARE = 0.25;
+
+export const VEIL_STEP = 0.1;

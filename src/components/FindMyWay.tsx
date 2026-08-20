@@ -21,7 +21,6 @@ import { usePlayback } from "../hooks/usePlayback";
 import { drawMap, prepareCanvas } from "../render/draw";
 import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
 import { hexesToDraw } from "../render/layout";
-import { paletteFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
@@ -65,7 +64,7 @@ export function FindMyWay() {
     const playback = usePlayback(search.events.length, speed);
     const roles = useMemo(() => rolesAt(map, search, playback.index), [map, search, playback.index]);
     const hexes = useMemo(
-        () => hexesToDraw(map, roles, paletteFor(theme.palette.mode), view),
+        () => hexesToDraw(map, roles, view, theme.palette.mode),
         [map, roles, theme.palette.mode, view]
     );
 
