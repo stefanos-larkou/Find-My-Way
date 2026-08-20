@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { HexMap } from "./models";
-import { UNREACHABLE } from "./constants";
+import { MAX_WEIGHT, MIN_WEIGHT, UNREACHABLE } from "./constants";
 import { distancesFrom } from "./distances";
 import { furthestApart } from "./furthest";
 import { generateMap, optionsFor } from "./generation";
-import { indexOf, openCells } from "./grid";
+import { indexOf, openCells, weightAt } from "./grid";
 import { createRandom } from "./random";
 
 function reachableCount(map: HexMap): number {
@@ -52,4 +52,23 @@ describe("generateMap", () => {
         const winding = generateMap(optionsFor(60, 1), createRandom(7));
         expect(diameter(winding)).toBeGreaterThan(diameter(compact));
     });
+
+    it("gives every open cell a weight in range", () => {
+        const map = generateMap(optionsFor(60, 0.5), createRandom(8));
+        const weights = openCells(map).map(hex => weightAt(map, hex));
+        expect(weights.filter(weight => weight < MIN_WEIGHT || weight > MAX_WEIGHT)).toEqual([]);
+    });
+
+    it("produces the same weights for the same seed", () => {
+        const first = generateMap(optionsFor(60, 0.5), createRandom(9));
+        const second = generateMap(optionsFor(60, 0.5), createRandom(9));
+        expect(first.weights).toEqual(second.weights);
+    });
+
+    it("makes light ground more common than heavy", () => {
+        const map = generateMap(optionsFor(300, 0.5), createRandom(10));
+        const weights = openCells(map).map(hex => weightAt(map, hex));
+        expect(weights.filter(weight => weight === MIN_WEIGHT).length).toBeGreaterThan(weights.filter(weight => weight === MAX_WEIGHT).length);
+    });
+
 });

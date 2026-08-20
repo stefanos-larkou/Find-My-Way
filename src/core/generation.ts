@@ -1,6 +1,6 @@
 import type { GenerationOptions, Hex, HexMap, MapGrowth } from "./models";
-import { BOX_SLACK, BOX_SLACK_PER_COMPLEXITY } from "./constants";
-import { adjacent, cellAt, createMap, indexOf, setCell } from "./grid";
+import { BOX_SLACK, BOX_SLACK_PER_COMPLEXITY, HEAVY_SHARE, MAX_WEIGHT, MIN_WEIGHT, ROUGH_SHARE } from "./constants";
+import { adjacent, cellAt, createMap, indexOf, openCells, setCell, setWeight } from "./grid";
 
 
 
@@ -29,6 +29,7 @@ export function generateMap(options: GenerationOptions, random: () => number): H
         expand(growth, hex, random);
     }
 
+    assignWeights(growth.map, random);
     return growth.map;
 }
 
@@ -63,4 +64,14 @@ function shuffled(hexes: Hex[], random: () => number): Hex[] {
     }
 
     return result;
+}
+
+function assignWeights(map: HexMap, random: () => number): void {
+    openCells(map).forEach(hex => setWeight(map, hex, weightFor(random())));
+}
+
+function weightFor(roll: number): number {
+    if (roll < HEAVY_SHARE) return MAX_WEIGHT;
+    if (roll < HEAVY_SHARE + ROUGH_SHARE) return MIN_WEIGHT + 1;
+    return MIN_WEIGHT;
 }

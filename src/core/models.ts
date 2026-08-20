@@ -23,6 +23,7 @@ export interface HexMap {
     width: number;
     height: number;
     cells: CellState[];
+    weights: number[];
 }
 
 export interface Search {

@@ -1,11 +1,12 @@
-import { NEIGHBOUR_OFFSETS } from "./constants";
+import { MIN_WEIGHT, NEIGHBOUR_OFFSETS } from "./constants";
 import type { CellState, Hex, HexMap } from "./models";
 
 export function createMap(width: number, height: number): HexMap {
     return {
         width,
         height,
-        cells: new Array<CellState>(width * height).fill("absent")
+        cells: new Array<CellState>(width * height).fill("absent"),
+        weights: new Array<number>(width * height).fill(MIN_WEIGHT)
     };
 }
 
@@ -32,6 +33,15 @@ export function cellAt(map: HexMap, hex: Hex): CellState {
 
 export function setCell(map: HexMap, hex: Hex, state: CellState): void {
     if (isInBounds(map, hex)) map.cells[indexOf(map, hex)] = state;
+}
+
+export function weightAt(map: HexMap, hex: Hex): number {
+    if (!isInBounds(map, hex)) return MIN_WEIGHT;
+    return map.weights[indexOf(map, hex)] ?? MIN_WEIGHT;
+}
+
+export function setWeight(map: HexMap, hex: Hex, weight: number): void {
+    if (isInBounds(map, hex)) map.weights[indexOf(map, hex)] = weight;
 }
 
 export function isOpen(map: HexMap, hex: Hex): boolean {
@@ -69,7 +79,8 @@ export function withWalls(map: HexMap, walls: ReadonlySet<number>): HexMap {
     return {
         width: map.width,
         height: map.height,
-        cells: map.cells.map((state, index) => state === "open" && walls.has(index) ? "wall" : state)
+        cells: map.cells.map((state, index) => state === "open" && walls.has(index) ? "wall" : state),
+        weights: map.weights
     };
 }
 

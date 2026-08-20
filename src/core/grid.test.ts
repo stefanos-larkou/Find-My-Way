@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, withWalls } from "./grid";
+import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withWalls } from "./grid";
 import { mapFrom } from "./test-maps";
+import { MAX_WEIGHT, MIN_WEIGHT } from "./constants";
 
 describe("createMap", () => {
     it("fills the box with absent cells", () => {
@@ -115,6 +116,12 @@ describe("withWalls", () => {
         withWalls(map, new Set([0]));
         expect(cellAt(map, { q: 0, r: 0 })).toBe("open");
     });
+
+    it("keeps the weights of the map it derives from", () => {
+        const map = createMap(3, 3);
+        setWeight(map, { q: 1, r: 1 }, MAX_WEIGHT);
+        expect(withWalls(map, new Set([0])).weights).toEqual(map.weights);
+    });
 });
 
 describe("hexDistance", () => {
@@ -132,5 +139,23 @@ describe("hexDistance", () => {
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: 0 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 0, r: 3 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: -3 })).toBe(3);
+    });
+});
+
+describe("weightAt", () => {
+    it("is the minimum for a hex outside the map", () => {
+        expect(weightAt(createMap(2, 2), { q: 5, r: 0 })).toBe(MIN_WEIGHT);
+    });
+
+    it("returns what setWeight wrote", () => {
+        const map = createMap(3, 3);
+        setWeight(map, { q: 1, r: 1 }, MAX_WEIGHT);
+        expect(weightAt(map, { q: 1, r: 1 })).toBe(MAX_WEIGHT);
+    });
+
+    it("ignores a write outside the map", () => {
+        const map = createMap(2, 2);
+        setWeight(map, { q: 9, r: 9 }, MAX_WEIGHT);
+        expect(map.weights.filter(weight => weight !== MIN_WEIGHT)).toEqual([]);
     });
 });
