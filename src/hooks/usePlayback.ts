@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MAX_FRAME_MS } from "../core/constants";
+import { EMPTY_INDEX, MAX_FRAME_MS } from "../core/constants";
 import { advanceIndex, clampIndex, lastIndex, stepIndex } from "./playback";
 import type { Playback } from "../core/models";
 
 export function usePlayback(eventCount: number, eventsPerSecond: number): Playback {
-    const [index, setIndex] = useState(0);
+    const [index, setIndex] = useState(EMPTY_INDEX);
     const [playing, setPlaying] = useState(false);
-    const indexRef = useRef(0);
+    const [started, setStarted] = useState(false);
+    const indexRef = useRef(EMPTY_INDEX);
 
     useEffect(() => {
         indexRef.current = index;
@@ -39,33 +40,38 @@ export function usePlayback(eventCount: number, eventsPerSecond: number): Playba
     }, [playing, eventsPerSecond, eventCount]);
 
     const toggle = useCallback(() => {
+        setStarted(true);
+
         if (playing) {
             setPlaying(false);
             return;
         }
 
         if (index >= lastIndex(eventCount)) {
-            setIndex(0);
-            indexRef.current = 0;
+            setIndex(EMPTY_INDEX);
+            indexRef.current = EMPTY_INDEX;
         }
 
         setPlaying(true);
     }, [playing, index, eventCount]);
 
     const step = useCallback((direction: number) => {
+        setStarted(true);
         setPlaying(false);
         setIndex(current => stepIndex(current, direction, eventCount));
     }, [eventCount]);
 
     const scrubTo = useCallback((next: number) => {
+        setStarted(true);
         setPlaying(false);
         setIndex(clampIndex(next, eventCount));
     }, [eventCount]);
 
     const reset = useCallback(() => {
+        setStarted(false);
         setPlaying(false);
-        setIndex(0);
+        setIndex(EMPTY_INDEX);
     }, []);
 
-    return { index, playing, toggle, step, scrubTo, reset };
+    return { index, playing, started, toggle, step, scrubTo, reset };
 }

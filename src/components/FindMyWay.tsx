@@ -29,6 +29,7 @@ import { WeightBrush } from "./WeightBrush";
 import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
 import { usePersistedChoice } from "../hooks/usePersistedChoice";
+import { EMPTY_INDEX } from "../core/constants";
 import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
 import { weighted, painted } from "../core/overlays";
 
@@ -83,7 +84,7 @@ export function FindMyWay() {
         [map, roles, theme.palette.mode, view]
     );
     const outcome = useMemo(() => outcomeOf(map, search.events), [map, search.events]);
-    const finished = search.events.length > 0 && playback.index >= lastIndex(search.events.length);
+    const finished = playback.started && search.events.length > 0 && playback.index >= lastIndex(search.events.length);
 
     const restart = useCallback(() => {
         setWalls(new Set());
@@ -343,7 +344,7 @@ export function FindMyWay() {
                 <Box sx={{ width: "100%", px: 1.5, boxSizing: "border-box" }}>
                     <Slider
                         value={playback.index}
-                        min={0}
+                        min={EMPTY_INDEX}
                         max={lastIndex(search.events.length)}
                         step={0.01}
                         onChange={(_, value) => playback.scrubTo(value)}

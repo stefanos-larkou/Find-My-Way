@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { EMPTY_INDEX } from "../core/constants";
 import { usePlayback } from "./usePlayback";
 
 const EVENT_COUNT = 10;
@@ -19,10 +20,10 @@ describe("usePlayback", () => {
         const { result } = renderHook(() => usePlayback(EVENT_COUNT, SPEED));
 
         act(() => result.current.step(1));
-        expect(result.current.index).toBe(1);
+        expect(result.current.index).toBe(0);
 
         act(() => result.current.step(-1));
-        expect(result.current.index).toBe(0);
+        expect(result.current.index).toBe(EMPTY_INDEX);
     });
 
     it("clamps a scrub to the event range", () => {
@@ -47,7 +48,7 @@ describe("usePlayback", () => {
         act(() => result.current.scrubTo(9));
         act(() => result.current.toggle());
 
-        expect(result.current.index).toBe(0);
+        expect(result.current.index).toBe(EMPTY_INDEX);
         expect(result.current.playing).toBe(true);
     });
 
@@ -57,7 +58,7 @@ describe("usePlayback", () => {
         act(() => result.current.scrubTo(5));
         act(() => result.current.reset());
 
-        expect(result.current.index).toBe(0);
+        expect(result.current.index).toBe(EMPTY_INDEX);
         expect(result.current.playing).toBe(false);
     });
 });

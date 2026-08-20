@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { EMPTY_INDEX } from "../core/constants";
 import { lastIndex, clampIndex, advanceIndex, stepIndex } from "./playback";
 
 describe("lastIndex", () => {
-    it("is zero for an empty search", () => {
-        expect(lastIndex(0)).toBe(0);
+    it("is the empty index for an empty search", () => {
+        expect(lastIndex(0)).toBe(EMPTY_INDEX);
     });
 
     it("is one below the event count", () => {
@@ -13,9 +14,9 @@ describe("lastIndex", () => {
 
 describe("clampIndex", () => {
     it("holds the index inside the event range", () => {
-        expect(clampIndex(-5, 10)).toBe(0);
+        expect(clampIndex(-5, 10)).toBe(EMPTY_INDEX);
         expect(clampIndex(50, 10)).toBe(9);
-        expect(clampIndex(3, 0)).toBe(0);
+        expect(clampIndex(3, 0)).toBe(EMPTY_INDEX);
     });
 });
 
@@ -39,7 +40,7 @@ describe("stepIndex", () => {
         expect(stepIndex(12.4, -1, 100)).toBe(11);
     });
 
-    it("will not go below zero", () => {
-        expect(stepIndex(0, -1, 100)).toBe(0);
+    it("will not go below the empty index", () => {
+        expect(stepIndex(EMPTY_INDEX, -1, 100)).toBe(EMPTY_INDEX);
     });
 });

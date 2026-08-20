@@ -89,6 +89,7 @@ export interface DrawnHex {
 export interface Playback {
     index: number;
     playing: boolean;
+    started: boolean;
     toggle: () => void;
     step: (direction: number) => void;
     scrubTo: (index: number) => void;

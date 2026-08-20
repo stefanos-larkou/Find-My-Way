@@ -28,7 +28,7 @@ describe("FindMyWay", () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
         await userEvent.click(screen.getByRole("button", { name: "Replay" }));
-        expect(screen.getByRole("slider", { name: "Search progress" })).toHaveAttribute("aria-valuenow", "0");
+        expect(screen.getByRole("slider", { name: "Search progress" })).toHaveAttribute("aria-valuenow", "-1");
     });
 
     it("offers to play and then to pause", async () => {
@@ -40,7 +40,7 @@ describe("FindMyWay", () => {
     it("moves the search progress forward when stepped", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
-        expect(screen.getByRole("slider", { name: "Search progress" })).toHaveAttribute("aria-valuenow", "1");
+        expect(screen.getByRole("slider", { name: "Search progress" })).toHaveAttribute("aria-valuenow", "0");
     });
 
     it("names the step buttons after the step size", () => {
@@ -73,7 +73,7 @@ describe("FindMyWay", () => {
     it("shows how far through the events the playback is", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));
-        expect(screen.getByText(/^2 \/ \d+$/)).toBeInTheDocument();
+        expect(screen.getByText(/^1 \/ \d+$/)).toBeInTheDocument();
     });
 
     it("offers the weight tool only once terrain is switched on", async () => {
@@ -108,6 +108,17 @@ describe("FindMyWay", () => {
 
     it("shows no outcome before the search has played out", () => {
         renderVisualiser();
+        expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
+    });
+
+    it("shows no outcome until the playback has been started", async () => {
+        renderVisualiser();
+        const slider = screen.getByRole("slider", { name: "Search progress" });
+        fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
+        expect(screen.getByText(/^(\d+ steps|No route)$/)).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole("button", { name: "Replay" }));
+
         expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
     });
 
