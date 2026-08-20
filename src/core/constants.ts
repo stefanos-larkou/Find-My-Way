@@ -15,7 +15,7 @@ export const BOX_SLACK = 1.5;
 export const BOX_SLACK_PER_COMPLEXITY = 2;
 
 export const MIN_EVENTS_PER_SECOND = 1;
-export const MAX_EVENTS_PER_SECOND = 240;
+export const MAX_EVENTS_PER_SECOND = 2000;
 
 export const MAX_FRAME_MS = 100;
 
@@ -28,7 +28,7 @@ export const MAX_HEX_SIZE = 36;
 export const CONTROLS_WIDTH = 460;
 
 export const TRANSPORT_BUTTONS_WIDTH = 136;
-export const MODE_GROUP_WIDTH = 264;
+export const MODE_GROUP_WIDTH = 340;
 
 export const DEFAULT_STEP_SIZE = 1;
 export const MIN_STEP_SIZE = 1;

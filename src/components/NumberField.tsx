@@ -22,11 +22,11 @@ const NO_NATIVE_SPINNERS = {
     }
 };
 
-export function NumberField({ label, value, min, max, step = 1, showLabel = false, width = 104, onChange }: NumberFieldProps) {
+export function NumberField({ label, value, min, max, step = 1, showLabel = false, width = 120, onChange }: NumberFieldProps) {
     return (
         <TextField
             type="number"
-            size="small"
+            size="medium"
             label={showLabel ? label : undefined}
             value={value}
             onChange={event => onChange(withinRange(Number(event.target.value), min, max))}

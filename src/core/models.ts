@@ -26,6 +26,12 @@ export interface HexMap {
     weights: number[];
 }
 
+export interface Outcome {
+    found: boolean;
+    steps: number;
+    cost: number;
+}
+
 export interface Search {
     events: SearchEvent[];
     start: Hex;

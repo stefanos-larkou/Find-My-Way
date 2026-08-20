@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { breadthFirst } from "./breadth-first";
 import { aStar } from "./a-star";
 import { dijkstra } from "./dijkstra";
-import { costOf, mapFrom, pathOf, visitsOf } from "../test-maps";
+import { mapFrom, visitsOf } from "../test-maps";
+import { costOf, pathOf } from "../outcome";
 
 const OPEN_MAP = [
     "..........",
