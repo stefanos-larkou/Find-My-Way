@@ -45,6 +45,8 @@ export interface MapGrowth {
     frontier: Hex[];
 }
 
+export type WallStroke = "add" | "remove";
+
 export interface Pixel {
     x: number;
     y: number;

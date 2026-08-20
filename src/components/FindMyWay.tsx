@@ -7,7 +7,7 @@ import { Box, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, S
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
-import type { Hex, HexMap, HexPair, Search } from "../core/models";
+import type { Hex, HexMap, HexPair, Search, WallStroke } from "../core/models";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
@@ -29,9 +29,9 @@ import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
 import { usePersistedChoice } from "../hooks/usePersistedChoice";
 import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
+import { weighted, painted } from "../core/overlays";
 
 type EditMode = "wall" | "start" | "end" | "weight";
-type WallStroke = "add" | "remove";
 type Stroke = { kind: "wall"; stroke: WallStroke; } | { kind: "weight"; weight: number; };
 
 const ORIGIN: Hex = { q: 0, r: 0 };
@@ -391,29 +391,10 @@ function stepLabel(steps: number): string {
     return `Step ${steps < 0 ? "back" : "forward"} ${size} event${size === 1 ? "" : "s"}`;
 }
 
-function painted(walls: ReadonlySet<number>, index: number, stroke: WallStroke): ReadonlySet<number> {
-    if (stroke === "add" ? walls.has(index) : !walls.has(index)) return walls;
-
-    const next = new Set(walls);
-    if (stroke === "add") next.add(index);
-    else next.delete(index);
-
-    return next;
-}
-
 function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
     return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
 }
 
 function eventCounter(index: number, eventCount: number): string {
     return `${eventCount === 0 ? 0 : Math.floor(index) + 1} / ${eventCount}`;
-}
-
-function weighted(painted: ReadonlyMap<number, number>, index: number, weight: number): ReadonlyMap<number, number> {
-    if (painted.get(index) === weight) return painted;
-
-    const next = new Map(painted);
-    next.set(index, weight);
-
-    return next;
 }
