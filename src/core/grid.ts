@@ -84,6 +84,15 @@ export function withWalls(map: HexMap, walls: ReadonlySet<number>): HexMap {
     };
 }
 
+export function withWeights(map: HexMap, painted: ReadonlyMap<number, number>, enabled: boolean): HexMap {
+    return {
+        width: map.width,
+        height: map.height,
+        cells: map.cells,
+        weights: map.weights.map((weight, index) => enabled ? painted.get(index) ?? weight : MIN_WEIGHT)
+    };
+}
+
 export function hexDistance(from: Hex, to: Hex): number {
     const dq = from.q - to.q;
     const dr = from.r - to.r;

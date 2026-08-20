@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withWalls } from "./grid";
+import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withWalls, withWeights } from "./grid";
 import { mapFrom } from "./test-maps";
 import { MAX_WEIGHT, MIN_WEIGHT } from "./constants";
 
@@ -139,6 +139,31 @@ describe("hexDistance", () => {
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: 0 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 0, r: 3 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: -3 })).toBe(3);
+    });
+});
+
+describe("withWeights", () => {
+    it("flattens every weight when terrain is off", () => {
+        const map = createMap(2, 2);
+        setWeight(map, { q: 0, r: 0 }, MAX_WEIGHT);
+        expect(withWeights(map, new Map(), false).weights.filter(weight => weight !== MIN_WEIGHT)).toEqual([]);
+    });
+
+    it("keeps the generated weights when nothing is painted", () => {
+        const map = createMap(2, 2);
+        setWeight(map, { q: 0, r: 0 }, MAX_WEIGHT);
+        expect(withWeights(map, new Map(), true).weights).toEqual(map.weights);
+    });
+
+    it("prefers a painted weight over the generated one", () => {
+        const map = createMap(2, 2);
+        setWeight(map, { q: 0, r: 0 }, MAX_WEIGHT);
+        expect(weightAt(withWeights(map, new Map([[0, MIN_WEIGHT]]), true), { q: 0, r: 0 })).toBe(MIN_WEIGHT);
+    });
+
+    it("leaves the cells alone", () => {
+        const map = mapFrom(["#."]);
+        expect(withWeights(map, new Map(), false).cells).toEqual(map.cells);
     });
 });
 
