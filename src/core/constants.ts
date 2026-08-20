@@ -44,3 +44,9 @@ export const SLIDER_MAX = 100;
 
 export const DEFAULT_SPEED_SLIDER = 50;
 export const DEFAULT_COMPLEXITY_SLIDER = 50;
+
+export const MIN_WEIGHT = 1;
+export const MAX_WEIGHT = 3;
+
+export const HEAVY_SHARE = 0.15;
+export const ROUGH_SHARE = 0.25;
