@@ -99,6 +99,41 @@ describe("FindMyWay", () => {
         expect(screen.getByRole("button", { name: "Wall" })).toHaveAttribute("aria-pressed", "true");
     });
 
+    it("reports the outcome once the search has played out", () => {
+        renderVisualiser();
+        const slider = screen.getByRole("slider", { name: "Search progress" });
+        fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
+        expect(screen.getByText(/^(\d+ steps|No route)$/)).toBeInTheDocument();
+    });
+
+    it("shows no outcome before the search has played out", () => {
+        renderVisualiser();
+        expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
+    });
+
+    it("reports what the route cost once terrain is on", async () => {
+        renderVisualiser();
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        const slider = screen.getByRole("slider", { name: "Search progress" });
+        fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
+        expect(screen.getByText(/^\d+ steps, cost \d+$/)).toBeInTheDocument();
+    });
+
+    it("offers to clear walls only while placing walls", async () => {
+        renderVisualiser();
+        expect(screen.getByRole("button", { name: "Clear walls" })).toBeEnabled();
+        await userEvent.click(screen.getByRole("button", { name: "Start" }));
+        expect(screen.getByRole("button", { name: "Clear walls" })).toBeDisabled();
+    });
+
+    it("offers to clear terrain only while painting it", async () => {
+        renderVisualiser();
+        expect(screen.getByRole("button", { name: "Clear terrain" })).toBeDisabled();
+        await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
+        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+        expect(screen.getByRole("button", { name: "Clear terrain" })).toBeEnabled();
+    });
+
     it("remembers the chosen algorithm across a remount", async () => {
         const { label } = ALGORITHMS["dijkstra"];
         const { unmount } = render(

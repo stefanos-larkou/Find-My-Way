@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { breadthFirst } from "./breadth-first";
-import { mapFrom, pathOf } from "../test-maps";
+import { mapFrom } from "../test-maps";
+import { pathOf } from "../outcome";
 
 describe("breadthFirst", () => {
     it("finds the shortest route around a wall", () => {

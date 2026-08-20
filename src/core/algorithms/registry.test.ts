@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adjacent, sameHex } from "../grid";
-import { mapFrom, pathOf, visitsOf } from "../test-maps";
+import { mapFrom, visitsOf } from "../test-maps";
+import { pathOf } from "../outcome";
 import { ALGORITHM_NAMES, ALGORITHMS } from "./registry";
 
 const START = { q: 0, r: 0 };

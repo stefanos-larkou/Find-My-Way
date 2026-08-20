@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { breadthFirst } from "./breadth-first";
 import { greedyBestFirst } from "./greedy-best-first";
-import { mapFrom, pathOf, visitsOf } from "../test-maps";
+import { mapFrom, visitsOf } from "../test-maps";
+import { pathOf } from "../outcome";
 
 const HOOK = [
     "..........",

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { breadthFirst } from "./breadth-first";
 import { dijkstra } from "./dijkstra";
-import { costOf, mapFrom, pathOf } from "../test-maps";
+import { mapFrom } from "../test-maps";
+import { costOf, pathOf } from "../outcome";
 
 const BAND = [
     "111111111",

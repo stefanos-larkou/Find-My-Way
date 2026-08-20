@@ -22,7 +22,7 @@ export function WeightBrush({ value, disabled, onChange }: WeightBrushProps) {
         <ToggleButtonGroup
             value={value}
             exclusive
-            size="small"
+            size="medium"
             onChange={change}
             aria-label="Weight to paint"
             disabled={disabled}

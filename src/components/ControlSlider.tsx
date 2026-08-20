@@ -14,7 +14,7 @@ interface ControlSliderProps {
 export function ControlSlider({ label, value, min, max, step, marks, onChange }: ControlSliderProps) {
     return (
         <Stack direction="row" spacing={2} sx={{ alignItems: "center", width: "100%" }}>
-            <Typography variant="body2" color="text.secondary" sx={{ width: 84 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ width: 96 }}>
                 {label}
             </Typography>
             <Slider

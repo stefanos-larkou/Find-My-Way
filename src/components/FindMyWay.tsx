@@ -1,13 +1,14 @@
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import ReplayIcon from "@mui/icons-material/Replay";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
-import { Box, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
+import { Box, Button, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
-import type { Hex, HexMap, HexPair, Search, WallStroke } from "../core/models";
+import type { Hex, HexMap, HexPair, Outcome, Search, WallStroke } from "../core/models";
+import { outcomeOf } from "../core/outcome";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
@@ -45,7 +46,7 @@ export function FindMyWay() {
     const mapAreaRef = useRef<HTMLDivElement>(null);
     const strokeRef = useRef<Stroke | undefined>(undefined);
     const available = useElementSize(mapAreaRef);
-    const [seed] = useState(() => Date.now());
+    const [seed, setSeed] = useState(() => Date.now());
     const [cellCount, setCellCount] = usePersistedNumber(CELL_COUNT_KEY, DEFAULT_CELL_COUNT, MIN_CELL_COUNT, MAX_CELL_COUNT);
     const [complexitySlider, setComplexitySlider] = usePersistedNumber(COMPLEXITY_KEY, DEFAULT_COMPLEXITY_SLIDER, SLIDER_MIN, SLIDER_MAX);
     const [speedSlider, setSpeedSlider] = usePersistedNumber(SPEED_KEY, DEFAULT_SPEED_SLIDER, SLIDER_MIN, SLIDER_MAX);
@@ -81,6 +82,8 @@ export function FindMyWay() {
         () => hexesToDraw(map, roles, view, theme.palette.mode),
         [map, roles, theme.palette.mode, view]
     );
+    const outcome = useMemo(() => outcomeOf(map, search.events), [map, search.events]);
+    const finished = search.events.length > 0 && playback.index >= lastIndex(search.events.length);
 
     const restart = useCallback(() => {
         setWalls(new Set());
@@ -88,6 +91,21 @@ export function FindMyWay() {
         setChosen({});
         playback.reset();
     }, [playback]);
+
+    const clearWalls = useCallback(() => {
+        setWalls(new Set());
+        playback.reset();
+    }, [playback]);
+
+    const clearTerrain = useCallback(() => {
+        setPaintedWeights(new Map());
+        playback.reset();
+    }, [playback]);
+
+    const regenerate = useCallback(() => {
+        setSeed(Date.now());
+        restart();
+    }, [restart]);
 
     const changeCellCount = useCallback((value: number) => {
         setCellCount(value);
@@ -215,7 +233,7 @@ export function FindMyWay() {
             }}
         >
             <Stack spacing={2} sx={{ gridArea: "params", width: "100%", alignSelf: "center" }}>
-                <FormControl size="small" fullWidth>
+                <FormControl fullWidth>
                     <InputLabel id="algorithm-label">Algorithm</InputLabel>
                     <Select<AlgorithmName>
                         labelId="algorithm-label"
@@ -258,7 +276,7 @@ export function FindMyWay() {
                 <ToggleButtonGroup
                     value={mode}
                     exclusive
-                    size="small"
+                    size="medium"
                     onChange={changeMode}
                     aria-label="What a click places"
                     fullWidth
@@ -270,6 +288,22 @@ export function FindMyWay() {
                     <ToggleButton value="end">End</ToggleButton>
                 </ToggleButtonGroup>
                 {terrain && <WeightBrush value={brush} disabled={mode !== "weight"} onChange={setBrush} />}
+                <Stack direction="row" spacing={1} sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}>
+                    <Tooltip title="Clear all user-added walls">
+                        <Box component="span" sx={{ width: "100%" }}>
+                            <Button fullWidth onClick={clearWalls} disabled={mode !== "wall"}>Clear walls</Button>
+                        </Box>
+                    </Tooltip>
+                    <Tooltip title="Clear all user-added terrain">
+                        <Box component="span" sx={{ width: "100%" }}>
+                            <Button fullWidth onClick={clearTerrain} disabled={mode !== "weight"}>Clear terrain</Button>
+                        </Box>
+                    </Tooltip>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}>
+                    <Button fullWidth onClick={restart}>Reset</Button>
+                    <Button fullWidth onClick={regenerate}>New map</Button>
+                </Stack>
             </Stack>
 
             <Box
@@ -298,23 +332,32 @@ export function FindMyWay() {
             <Box
                 sx={{
                     gridArea: "transport",
-                    display: "grid",
-                    gridTemplateColumns: {
-                        xs: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr) auto`,
-                        md: `${TRANSPORT_BUTTONS_WIDTH}px minmax(0, 1fr) auto auto`
-                    },
-                    gridTemplateAreas: {
-                        xs: "\"buttons count refresh\" \"step step step\" \"scrub scrub scrub\"",
-                        md: "\"buttons scrub count refresh\" \"step . . .\""
-                    },
+                    display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     gap: 1,
                     width: "100%",
-                    maxWidth: "100%",
-                    mx: "auto"
+                    minWidth: 0
                 }}
             >
-                <Stack direction="row" spacing={1} sx={{ gridArea: "buttons" }}>
+                <Box sx={{ width: "100%", px: 1.5, boxSizing: "border-box" }}>
+                    <Slider
+                        value={playback.index}
+                        min={0}
+                        max={lastIndex(search.events.length)}
+                        step={0.01}
+                        onChange={(_, value) => playback.scrubTo(value)}
+                        aria-label="Search progress"
+                        getAriaValueText={value => eventCounter(value, search.events.length)}
+                        sx={{
+                            "& .MuiSlider-thumb, & .MuiSlider-track": {
+                                transition: "none"
+                            }
+                        }}
+                    />
+                </Box>
+
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
                     <Tooltip title={stepLabel(-stepSize)} placement="top">
                         <IconButton onClick={() => playback.step(-stepSize)} aria-label={stepLabel(-stepSize)}>
                             <SkipPreviousIcon />
@@ -332,55 +375,49 @@ export function FindMyWay() {
                             <SkipNextIcon />
                         </IconButton>
                     </Tooltip>
-                </Stack>
 
-                <Slider
-                    value={playback.index}
-                    min={0}
-                    max={lastIndex(search.events.length)}
-                    step={0.01}
-                    onChange={(_, value) => playback.scrubTo(value)}
-                    aria-label="Search progress"
-                    getAriaValueText={value => eventCounter(value, search.events.length)}
-                    sx={{
-                        gridArea: "scrub",
-                        alignSelf: "center",
-                        "& .MuiSlider-thumb, & .MuiSlider-track": {
-                            transition: "none"
-                        }
-                    }}
-                />
+                    <Tooltip title="Replay" placement="top">
+                        <IconButton onClick={playback.reset} aria-label="Replay">
+                            <ReplayIcon />
+                        </IconButton>
+                    </Tooltip>
 
-                <Typography
-                    variant="body2"
-                    sx={{
-                        gridArea: "count",
-                        ml: 2.5,
-                        color: "text.secondary",
-                        fontVariantNumeric: "tabular-nums",
-                        whiteSpace: "nowrap"
-                    }}
-                >
-                    {eventCounter(playback.index, search.events.length)}
-                </Typography>
-
-                <Tooltip title="Replay" placement="top">
-                    <IconButton onClick={playback.reset} aria-label="Replay" sx={{ gridArea: "refresh", justifySelf: "end" }}>
-                        <RefreshIcon />
-                    </IconButton>
-                </Tooltip>
-
-                <Box sx={{ gridArea: "step" }}>
                     <NumberField
                         label="Step size"
                         showLabel
                         value={stepSize}
                         min={MIN_STEP_SIZE}
                         max={MAX_STEP_SIZE}
-                        width="100%"
+                        width={TRANSPORT_BUTTONS_WIDTH}
                         onChange={setStepSize}
                     />
-                </Box>
+                </Stack>
+
+                <Tooltip title="Which step of you are looking at, and how many steps this search requires in total" placement="top">
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: "text.secondary",
+                            fontVariantNumeric: "tabular-nums",
+                            whiteSpace: "nowrap",
+                            cursor: "help"
+                        }}
+                    >
+                        {eventCounter(playback.index, search.events.length)}
+                    </Typography>
+                </Tooltip>
+
+                <Typography
+                    variant="h6"
+                    sx={{
+                        minHeight: "1.6em",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: outcome.found ? "success.main" : "error.main"
+                    }}
+                >
+                    {finished ? outcomeText(outcome, terrain) : ""}
+                </Typography>
             </Box>
         </Box>
     );
@@ -393,6 +430,11 @@ function stepLabel(steps: number): string {
 
 function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
     return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
+}
+
+function outcomeText(outcome: Outcome, terrain: boolean): string {
+    if (!outcome.found) return "No route";
+    return terrain ? `${outcome.steps} steps, cost ${outcome.cost}` : `${outcome.steps} steps`;
 }
 
 function eventCounter(index: number, eventCount: number): string {
