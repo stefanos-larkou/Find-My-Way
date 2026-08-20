@@ -4,7 +4,7 @@ import { MAX_WEIGHT, MIN_WEIGHT, UNREACHABLE } from "./constants";
 import { distancesFrom } from "./distances";
 import { furthestApart } from "./furthest";
 import { generateMap, optionsFor } from "./generation";
-import { indexOf, openCells, weightAt } from "./grid";
+import { indexOf, neighbours, openCells, weightAt } from "./grid";
 import { createRandom } from "./random";
 
 function reachableCount(map: HexMap): number {
@@ -51,6 +51,12 @@ describe("generateMap", () => {
         const compact = generateMap(optionsFor(60, 0), createRandom(7));
         const winding = generateMap(optionsFor(60, 1), createRandom(7));
         expect(diameter(winding)).toBeGreaterThan(diameter(compact));
+    });
+
+    it("leaves most of a winding shape with somewhere else to turn", () => {
+        const map = generateMap(optionsFor(400, 1), createRandom(11));
+        const forced = openCells(map).filter(hex => neighbours(map, hex).length <= 2);
+        expect(forced.length / openCells(map).length).toBeLessThan(0.4);
     });
 
     it("gives every open cell a weight in range", () => {

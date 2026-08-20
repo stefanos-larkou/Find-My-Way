@@ -1,5 +1,5 @@
 import type { GenerationOptions, Hex, HexMap, MapGrowth } from "./models";
-import { BOX_SLACK, BOX_SLACK_PER_COMPLEXITY, HEAVY_SHARE, MAX_WEIGHT, MIN_WEIGHT, ROUGH_SHARE } from "./constants";
+import { BOX_SLACK, BOX_SLACK_PER_COMPLEXITY, WINDING_SHARE, HEAVY_SHARE, MAX_WEIGHT, MIN_WEIGHT, ROUGH_SHARE } from "./constants";
 import { adjacent, cellAt, createMap, indexOf, openCells, setCell, setWeight } from "./grid";
 
 
@@ -16,9 +16,12 @@ export function generateMap(options: GenerationOptions, random: () => number): H
     setCell(growth.map, seed, "open");
     expand(growth, seed, random);
 
+    const windingUntil = Math.floor(options.cellCount * WINDING_SHARE);
+
     let placed = 1;
     while (placed < options.cellCount && growth.frontier.length > 0) {
-        const pick = random() < options.complexity ? growth.frontier.length - 1 : Math.floor(random() * growth.frontier.length);
+        const bias = placed < windingUntil ? options.complexity : 0;
+        const pick = random() < bias ? growth.frontier.length - 1 : Math.floor(random() * growth.frontier.length);
 
         const hex = growth.frontier[pick] ?? seed;
         growth.frontier[pick] = growth.frontier[growth.frontier.length - 1] ?? hex;
