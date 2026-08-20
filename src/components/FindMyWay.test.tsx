@@ -76,25 +76,27 @@ describe("FindMyWay", () => {
         expect(screen.getByText(/^1 \/ \d+$/)).toBeInTheDocument();
     });
 
-    it("offers the weight tool only once terrain is switched on", async () => {
+    it("enables the terrain levels only once terrain is switched on", async () => {
         renderVisualiser();
-        expect(screen.queryByRole("button", { name: "Weight" })).not.toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Weight 3" })).toBeDisabled();
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
-        expect(screen.getByRole("button", { name: "Weight" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: "Weight 3" })).toBeEnabled();
     });
 
-    it("enables the weight brush only once the weight tool is chosen", async () => {
+    it("picks up the terrain tool when a level is chosen", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
-        expect(screen.getByRole("button", { name: "Weight 3" })).toBeDisabled();
-        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
-        expect(screen.getByRole("button", { name: "Weight 3" })).toBeEnabled();
+
+        await userEvent.click(screen.getByRole("button", { name: "Weight 2" }));
+
+        expect(screen.getByRole("button", { name: "Weight 2" })).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("button", { name: "Clear terrain" })).toBeEnabled();
     });
 
     it("returns to placing walls when terrain is switched off", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
-        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+        await userEvent.click(screen.getByRole("button", { name: "Weight 3" }));
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
         expect(screen.getByRole("button", { name: "Wall" })).toHaveAttribute("aria-pressed", "true");
     });
@@ -116,9 +118,7 @@ describe("FindMyWay", () => {
         const slider = screen.getByRole("slider", { name: "Search progress" });
         fireEvent.change(slider, { target: { value: slider.getAttribute("aria-valuemax") } });
         expect(screen.getByText(/^(\d+ steps|No route)$/)).toBeInTheDocument();
-
         await userEvent.click(screen.getByRole("button", { name: "Replay" }));
-
         expect(screen.queryByText(/^(\d+ steps|No route)$/)).not.toBeInTheDocument();
     });
 
@@ -141,7 +141,7 @@ describe("FindMyWay", () => {
         renderVisualiser();
         expect(screen.getByRole("button", { name: "Clear terrain" })).toBeDisabled();
         await userEvent.click(screen.getByRole("switch", { name: "Weighted terrain" }));
-        await userEvent.click(screen.getByRole("button", { name: "Weight" }));
+        await userEvent.click(screen.getByRole("button", { name: "Weight 3" }));
         expect(screen.getByRole("button", { name: "Clear terrain" })).toBeEnabled();
     });
 

@@ -9,10 +9,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
 import type { Hex, HexMap, HexPair, Outcome, Search, WallStroke } from "../core/models";
 import { outcomeOf } from "../core/outcome";
-import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH } from "../core/constants";
+import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, EMPTY_INDEX, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH, WEIGHTS } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
-import { cellAt, indexOf, sameHex, withWalls, withWeights } from "../core/grid";
+import { cellAt, indexOf, sameHex, withPlainGround, withWalls, withWeights } from "../core/grid";
 import { createRandom } from "../core/random";
 import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
@@ -22,19 +22,55 @@ import { usePlayback } from "../hooks/usePlayback";
 import { drawMap, prepareCanvas } from "../render/draw";
 import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
 import { hexesToDraw } from "../render/layout";
+import { paletteFor, veilFor } from "../render/palette";
 import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
-import { WeightBrush } from "./WeightBrush";
+import { HexSwatch } from "./HexSwatch";
 import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
 import { usePersistedChoice } from "../hooks/usePersistedChoice";
-import { EMPTY_INDEX } from "../core/constants";
 import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
 import { weighted, painted } from "../core/overlays";
 
 type EditMode = "wall" | "start" | "end" | "weight";
 type Stroke = { kind: "wall"; stroke: WallStroke; } | { kind: "weight"; weight: number; };
+
+const LABELS = {
+    algorithm: "Algorithm",
+    speed: "Speed",
+    size: "Size",
+    complexity: "Complexity",
+    terrain: "Weighted terrain",
+    groundGroup: "What a click places",
+    endpointGroup: "Where the route runs",
+    wall: "Wall",
+    weight: "Weight",
+    start: "Start",
+    end: "End",
+    clearWalls: "Clear walls",
+    clearTerrain: "Clear terrain",
+    reset: "Reset",
+    newMap: "New map",
+    progress: "Search progress",
+    replay: "Replay",
+    play: "Play",
+    pause: "Pause",
+    stepSize: "Step size",
+    noRoute: "No route"
+};
+
+const HINTS = {
+    wall: "Blocks the way",
+    weight: "How costly this ground is to cross",
+    start: "Where the route begins. It is always ordinary ground, so putting it on rough ground clears that hex",
+    end: "Where the route has to reach. It is always ordinary ground, so putting it on rough ground clears that hex",
+    clearWalls: "Clear all user-added walls",
+    clearTerrain: "Clear all user-added terrain",
+    counter: "Which step of you are looking at, and how many steps this search requires in total"
+};
+
+const PILL_ROW_WIDTH = "72%";
 
 const ORIGIN: Hex = { q: 0, r: 0 };
 const EDIT_MODES: EditMode[] = ["wall", "weight", "start", "end"];
@@ -59,21 +95,21 @@ export function FindMyWay() {
     const [algorithm, setAlgorithm] = usePersistedChoice<AlgorithmName>(ALGORITHM_KEY, "breadth-first", ALGORITHM_NAMES);
     const [paintedWeights, setPaintedWeights] = useState<ReadonlyMap<number, number>>(new Map());
     const [brush, setBrush] = usePersistedNumber(BRUSH_KEY, MAX_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
+    const [hovered, setHovered] = useState("");
 
     const baseMap = useMemo(
         () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
         [cellCount, complexitySlider, seed]
     );
-    const map = useMemo(
-        () => withWeights(withWalls(baseMap, walls), paintedWeights, terrain),
-        [baseMap, walls, paintedWeights, terrain]
-    );
-
     const defaults = useMemo(() => furthestApart(baseMap), [baseMap]);
     const endpoints = useMemo<HexPair>(() => ({
         start: chosen.start ?? defaults?.start ?? ORIGIN,
         end: chosen.end ?? defaults?.end ?? ORIGIN
     }), [chosen, defaults]);
+    const map = useMemo(
+        () => withPlainGround(withWeights(withWalls(baseMap, walls), paintedWeights, terrain), [endpoints.start, endpoints.end]),
+        [baseMap, walls, paintedWeights, terrain, endpoints]
+    );
     const search = useMemo(() => searchOn(map, endpoints, ALGORITHMS[algorithm].search), [map, endpoints, algorithm]);
     const view = useMemo(() => layoutFor(baseMap, available), [baseMap, available]);
     const speed = useMemo(() => speedFrom(speedSlider), [speedSlider]);
@@ -83,6 +119,7 @@ export function FindMyWay() {
         () => hexesToDraw(map, roles, view, theme.palette.mode),
         [map, roles, theme.palette.mode, view]
     );
+    const palette = useMemo(() => paletteFor(theme.palette.mode), [theme.palette.mode]);
     const outcome = useMemo(() => outcomeOf(map, search.events), [map, search.events]);
     const finished = playback.started && search.events.length > 0 && playback.index >= lastIndex(search.events.length);
 
@@ -118,9 +155,21 @@ export function FindMyWay() {
         restart();
     }, [setComplexitySlider, restart]);
 
-    const changeMode = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
+    const changeEndpoint = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | null) => {
         if (next) setMode(next);
     }, [setMode]);
+
+    const changeGround = useCallback((_event: MouseEvent<HTMLElement>, next: EditMode | number | null) => {
+        if (next === null) return;
+
+        if (typeof next === "number") {
+            setBrush(next);
+            setMode("weight");
+            return;
+        }
+
+        setMode(next);
+    }, [setBrush, setMode]);
 
     const changeTerrain = useCallback((_event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
         setTerrain(checked);
@@ -197,6 +246,15 @@ export function FindMyWay() {
         paint(hex, stroke.stroke);
     }, [hexUnder, editable, paint, paintWeight, map]);
 
+    const trackPointer = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
+        const hex = hexUnder(event);
+        const label = endpointLabel(hex, endpoints);
+        setHovered(current => current === label ? current : label);
+        continueStroke(event);
+    }, [hexUnder, endpoints, continueStroke]);
+
+    const leaveCanvas = useCallback(() => setHovered(""), []);
+
     const endStroke = useCallback(() => {
         if (!strokeRef.current) return;
 
@@ -235,10 +293,10 @@ export function FindMyWay() {
         >
             <Stack spacing={2} sx={{ gridArea: "params", width: "100%", alignSelf: "center" }}>
                 <FormControl fullWidth>
-                    <InputLabel id="algorithm-label">Algorithm</InputLabel>
+                    <InputLabel id="algorithm-label">{LABELS.algorithm}</InputLabel>
                     <Select<AlgorithmName>
                         labelId="algorithm-label"
-                        label="Algorithm"
+                        label={LABELS.algorithm}
                         value={algorithm}
                         onChange={changeAlgorithm}
                     >
@@ -248,21 +306,21 @@ export function FindMyWay() {
                     </Select>
                 </FormControl>
                 <ControlSlider
-                    label="Speed"
+                    label={LABELS.speed}
                     value={speedSlider}
                     min={SLIDER_MIN}
                     max={SLIDER_MAX}
                     onChange={setSpeedSlider}
                 />
                 <ControlSlider
-                    label="Size"
+                    label={LABELS.size}
                     value={cellCount}
                     min={MIN_CELL_COUNT}
                     max={MAX_CELL_COUNT}
                     onChange={changeCellCount}
                 />
                 <ControlSlider
-                    label="Complexity"
+                    label={LABELS.complexity}
                     value={complexitySlider}
                     min={SLIDER_MIN}
                     max={SLIDER_MAX}
@@ -270,40 +328,78 @@ export function FindMyWay() {
                 />
                 <FormControlLabel
                     control={<Switch checked={terrain} onChange={changeTerrain} />}
-                    label="Weighted terrain"
+                    label={LABELS.terrain}
                     labelPlacement="start"
                     sx={{ alignSelf: "center", mx: 0 }}
                 />
-                <ToggleButtonGroup
-                    value={mode}
-                    exclusive
-                    size="medium"
-                    onChange={changeMode}
-                    aria-label="What a click places"
-                    fullWidth
-                    sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}
-                >
-                    <ToggleButton value="wall">Wall</ToggleButton>
-                    {terrain && <ToggleButton value="weight">Weight</ToggleButton>}
-                    <ToggleButton value="start">Start</ToggleButton>
-                    <ToggleButton value="end">End</ToggleButton>
-                </ToggleButtonGroup>
-                {terrain && <WeightBrush value={brush} disabled={mode !== "weight"} onChange={setBrush} />}
+                <Stack spacing={0} sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}>
+                    <ToggleButtonGroup
+                        value={mode === "start" || mode === "end" ? mode : null}
+                        exclusive
+                        size="medium"
+                        onChange={changeEndpoint}
+                        aria-label={LABELS.endpointGroup}
+                        fullWidth
+                        sx={{
+                            alignSelf: "center",
+                            width: PILL_ROW_WIDTH,
+                            "& .MuiToggleButton-root": {
+                                borderBottomLeftRadius: 0,
+                                borderBottomRightRadius: 0,
+                                borderBottom: "none"
+                            }
+                        }}
+                    >
+                        <Tooltip describeChild title={HINTS.start}>
+                            <ToggleButton value="start">
+                                <HexSwatch fill={palette.start.fill} />{LABELS.start}
+                            </ToggleButton>
+                        </Tooltip>
+                        <Tooltip describeChild title={HINTS.end}>
+                            <ToggleButton value="end">
+                                <HexSwatch fill={palette.end.fill} />{LABELS.end}
+                            </ToggleButton>
+                        </Tooltip>
+                    </ToggleButtonGroup>
+
+                    <ToggleButtonGroup
+                        value={mode === "wall" ? "wall" : mode === "weight" ? brush : null}
+                        exclusive
+                        size="medium"
+                        onChange={changeGround}
+                        aria-label={LABELS.groundGroup}
+                        fullWidth
+                        sx={{ width: "100%", mt: "-1px" }}
+                    >
+                        <Tooltip describeChild title={HINTS.wall}>
+                            <ToggleButton value="wall">
+                                <HexSwatch fill={palette.wall.fill} />{LABELS.wall}
+                            </ToggleButton>
+                        </Tooltip>
+                        {WEIGHTS.map(weight => (
+                            <Tooltip key={weight} describeChild title={HINTS.weight}>
+                                <ToggleButton value={weight} disabled={!terrain} aria-label={weightLabel(weight)}>
+                                    <HexSwatch fill={palette.open.fill} veil={veilFor(theme.palette.mode, weight)} />{weight}
+                                </ToggleButton>
+                            </Tooltip>
+                        ))}
+                    </ToggleButtonGroup>
+                </Stack>
                 <Stack direction="row" spacing={1} sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}>
-                    <Tooltip title="Clear all user-added walls">
+                    <Tooltip describeChild title={HINTS.clearWalls}>
                         <Box component="span" sx={{ width: "100%" }}>
-                            <Button fullWidth onClick={clearWalls} disabled={mode !== "wall"}>Clear walls</Button>
+                            <Button fullWidth onClick={clearWalls} disabled={mode !== "wall"}>{LABELS.clearWalls}</Button>
                         </Box>
                     </Tooltip>
-                    <Tooltip title="Clear all user-added terrain">
+                    <Tooltip describeChild title={HINTS.clearTerrain}>
                         <Box component="span" sx={{ width: "100%" }}>
-                            <Button fullWidth onClick={clearTerrain} disabled={mode !== "weight"}>Clear terrain</Button>
+                            <Button fullWidth onClick={clearTerrain} disabled={mode !== "weight"}>{LABELS.clearTerrain}</Button>
                         </Box>
                     </Tooltip>
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ alignSelf: "center", width: MODE_GROUP_WIDTH }}>
-                    <Button fullWidth onClick={restart}>Reset</Button>
-                    <Button fullWidth onClick={regenerate}>New map</Button>
+                    <Button fullWidth onClick={restart}>{LABELS.reset}</Button>
+                    <Button fullWidth onClick={regenerate}>{LABELS.newMap}</Button>
                 </Stack>
             </Stack>
 
@@ -319,15 +415,18 @@ export function FindMyWay() {
                     overflow: "hidden"
                 }}
             >
-                <Box
-                    component="canvas"
-                    ref={canvasRef}
-                    onPointerDown={beginStroke}
-                    onPointerMove={continueStroke}
-                    onPointerUp={endStroke}
-                    onPointerCancel={endStroke}
-                    sx={{ display: "block", maxWidth: "100%", cursor: "pointer", touchAction: "none" }}
-                />
+                <Tooltip title={hovered} open={hovered !== ""} followCursor placement="top">
+                    <Box
+                        component="canvas"
+                        ref={canvasRef}
+                        onPointerDown={beginStroke}
+                        onPointerMove={trackPointer}
+                        onPointerUp={endStroke}
+                        onPointerCancel={endStroke}
+                        onPointerLeave={leaveCanvas}
+                        sx={{ display: "block", maxWidth: "100%", cursor: "pointer", touchAction: "none" }}
+                    />
+                </Tooltip>
             </Box>
 
             <Box
@@ -348,7 +447,7 @@ export function FindMyWay() {
                         max={lastIndex(search.events.length)}
                         step={0.01}
                         onChange={(_, value) => playback.scrubTo(value)}
-                        aria-label="Search progress"
+                        aria-label={LABELS.progress}
                         getAriaValueText={value => eventCounter(value, search.events.length)}
                         sx={{
                             "& .MuiSlider-thumb, & .MuiSlider-track": {
@@ -365,8 +464,8 @@ export function FindMyWay() {
                         </IconButton>
                     </Tooltip>
 
-                    <Tooltip title={playback.playing ? "Pause" : "Play"} placement="top">
-                        <IconButton onClick={playback.toggle} aria-label={playback.playing ? "Pause" : "Play"}>
+                    <Tooltip title={playback.playing ? LABELS.pause : LABELS.play} placement="top">
+                        <IconButton onClick={playback.toggle} aria-label={playback.playing ? LABELS.pause : LABELS.play}>
                             {playback.playing ? <PauseIcon /> : <PlayArrowIcon />}
                         </IconButton>
                     </Tooltip>
@@ -377,14 +476,14 @@ export function FindMyWay() {
                         </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Replay" placement="top">
-                        <IconButton onClick={playback.reset} aria-label="Replay">
+                    <Tooltip title={LABELS.replay} placement="top">
+                        <IconButton onClick={playback.reset} aria-label={LABELS.replay}>
                             <ReplayIcon />
                         </IconButton>
                     </Tooltip>
 
                     <NumberField
-                        label="Step size"
+                        label={LABELS.stepSize}
                         showLabel
                         value={stepSize}
                         min={MIN_STEP_SIZE}
@@ -394,7 +493,7 @@ export function FindMyWay() {
                     />
                 </Stack>
 
-                <Tooltip title="Which step of you are looking at, and how many steps this search requires in total" placement="top">
+                <Tooltip describeChild title={HINTS.counter} placement="top">
                     <Typography
                         variant="body1"
                         sx={{
@@ -424,6 +523,16 @@ export function FindMyWay() {
     );
 }
 
+function endpointLabel(hex: Hex, endpoints: HexPair): string {
+    if (sameHex(hex, endpoints.start)) return LABELS.start;
+    if (sameHex(hex, endpoints.end)) return LABELS.end;
+    return "";
+}
+
+function weightLabel(weight: number): string {
+    return `Weight ${weight}`;
+}
+
 function stepLabel(steps: number): string {
     const size = Math.abs(steps);
     return `Step ${steps < 0 ? "back" : "forward"} ${size} event${size === 1 ? "" : "s"}`;
@@ -434,7 +543,7 @@ function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
 }
 
 function outcomeText(outcome: Outcome, terrain: boolean): string {
-    if (!outcome.found) return "No route";
+    if (!outcome.found) return LABELS.noRoute;
     return terrain ? `${outcome.steps} steps, cost ${outcome.cost}` : `${outcome.steps} steps`;
 }
 

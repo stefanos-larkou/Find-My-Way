@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withWalls, withWeights } from "./grid";
+import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withPlainGround, withWalls, withWeights } from "./grid";
 import { mapFrom } from "./test-maps";
 import { MAX_WEIGHT, MIN_WEIGHT } from "./constants";
 
@@ -139,6 +139,20 @@ describe("hexDistance", () => {
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: 0 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 0, r: 3 })).toBe(3);
         expect(hexDistance({ q: 0, r: 0 }, { q: 3, r: -3 })).toBe(3);
+    });
+});
+
+describe("withPlainGround", () => {
+    it("flattens the weight of the hexes it is given", () => {
+        const map = createMap(3, 3);
+        setWeight(map, { q: 1, r: 1 }, MAX_WEIGHT);
+        expect(weightAt(withPlainGround(map, [{ q: 1, r: 1 }]), { q: 1, r: 1 })).toBe(MIN_WEIGHT);
+    });
+
+    it("leaves every other hex alone", () => {
+        const map = createMap(3, 3);
+        setWeight(map, { q: 2, r: 2 }, MAX_WEIGHT);
+        expect(weightAt(withPlainGround(map, [{ q: 1, r: 1 }]), { q: 2, r: 2 })).toBe(MAX_WEIGHT);
     });
 });
 

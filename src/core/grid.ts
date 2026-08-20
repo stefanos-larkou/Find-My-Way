@@ -93,6 +93,16 @@ export function withWeights(map: HexMap, painted: ReadonlyMap<number, number>, e
     };
 }
 
+export function withPlainGround(map: HexMap, hexes: Hex[]): HexMap {
+    const plain = new Set(hexes.map(hex => indexOf(map, hex)));
+    return {
+        width: map.width,
+        height: map.height,
+        cells: map.cells,
+        weights: map.weights.map((weight, index) => plain.has(index) ? MIN_WEIGHT : weight)
+    };
+}
+
 export function hexDistance(from: Hex, to: Hex): number {
     const dq = from.q - to.q;
     const dr = from.r - to.r;
