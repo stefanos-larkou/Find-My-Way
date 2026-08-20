@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adjacent, sameHex } from "../grid";
-import { mapFrom, pathOf } from "../test-maps";
+import { mapFrom, pathOf, visitsOf } from "../test-maps";
 import { ALGORITHM_NAMES, ALGORITHMS } from "./registry";
 
 const START = { q: 0, r: 0 };
@@ -49,6 +49,19 @@ ALGORITHM_NAMES.forEach(name => {
                 ".."
             ]);
             expect(pathOf(search(map, START, { q: 0, r: 2 }))).toHaveLength(0);
+        });
+
+        it("still reports the cells it visited when there is no path", () => {
+            const map = mapFrom([
+                "..",
+                "  ",
+                ".."
+            ]);
+            expect(visitsOf(search(map, START, { q: 0, r: 2 }))).toBeGreaterThan(0);
+        });
+
+        it("returns a single-cell path when the start is the end", () => {
+            expect(pathOf(search(mapFrom(["..."]), START, START))).toEqual([START]);
         });
 
         it("returns no events when the start is not open", () => {
