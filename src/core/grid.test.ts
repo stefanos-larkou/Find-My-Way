@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacent, cellAt, createMap, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withPlainGround, withWalls, withWeights } from "./grid";
+import { adjacent, cellAt, createMap, endpointAt, hexAt, hexDistance, indexOf, isInBounds, neighbours, openCells, sameHex, setCell, setWeight, weightAt, withPlainGround, withWalls, withWeights } from "./grid";
 import { mapFrom } from "./test-maps";
 import { MAX_WEIGHT, MIN_WEIGHT } from "./constants";
 
@@ -58,6 +58,22 @@ describe("sameHex", () => {
     it("compares by value rather than reference", () => {
         expect(sameHex({ q: 1, r: 2 }, { q: 1, r: 2 })).toBe(true);
         expect(sameHex({ q: 1, r: 2 }, { q: 2, r: 1 })).toBe(false);
+    });
+});
+
+describe("endpointAt", () => {
+    const endpoints = { start: { q: 0, r: 0 }, end: { q: 2, r: 1 } };
+
+    it("names the start", () => {
+        expect(endpointAt({ q: 0, r: 0 }, endpoints)).toBe("start");
+    });
+
+    it("names the end", () => {
+        expect(endpointAt({ q: 2, r: 1 }, endpoints)).toBe("end");
+    });
+
+    it("names nothing else", () => {
+        expect(endpointAt({ q: 1, r: 1 }, endpoints)).toBeUndefined();
     });
 });
 

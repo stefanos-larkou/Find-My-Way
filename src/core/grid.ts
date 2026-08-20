@@ -1,5 +1,5 @@
 import { MIN_WEIGHT, NEIGHBOUR_OFFSETS } from "./constants";
-import type { CellState, Hex, HexMap } from "./models";
+import type { CellState, Hex, HexMap, HexPair } from "./models";
 
 export function createMap(width: number, height: number): HexMap {
     return {
@@ -24,6 +24,12 @@ export function isInBounds(map: HexMap, hex: Hex): boolean {
 
 export function sameHex(a: Hex, b: Hex): boolean {
     return a.q === b.q && a.r === b.r;
+}
+
+export function endpointAt(hex: Hex, endpoints: HexPair): "start" | "end" | undefined {
+    if (sameHex(hex, endpoints.start)) return "start";
+    if (sameHex(hex, endpoints.end)) return "end";
+    return undefined;
 }
 
 export function cellAt(map: HexMap, hex: Hex): CellState {

@@ -12,7 +12,7 @@ import { outcomeOf } from "../core/outcome";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, EMPTY_INDEX, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH, WEIGHTS } from "../core/constants";
 import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
-import { cellAt, indexOf, sameHex, withPlainGround, withWalls, withWeights } from "../core/grid";
+import { cellAt, endpointAt, indexOf, sameHex, withPlainGround, withWalls, withWeights } from "../core/grid";
 import { createRandom } from "../core/random";
 import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
@@ -247,8 +247,8 @@ export function FindMyWay() {
     }, [hexUnder, editable, paint, paintWeight, map]);
 
     const trackPointer = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
-        const hex = hexUnder(event);
-        const label = endpointLabel(hex, endpoints);
+        const endpoint = endpointAt(hexUnder(event), endpoints);
+        const label = endpoint ? LABELS[endpoint] : "";
         setHovered(current => current === label ? current : label);
         continueStroke(event);
     }, [hexUnder, endpoints, continueStroke]);
@@ -521,12 +521,6 @@ export function FindMyWay() {
             </Box>
         </Box>
     );
-}
-
-function endpointLabel(hex: Hex, endpoints: HexPair): string {
-    if (sameHex(hex, endpoints.start)) return LABELS.start;
-    if (sameHex(hex, endpoints.end)) return LABELS.end;
-    return "";
 }
 
 function weightLabel(weight: number): string {
