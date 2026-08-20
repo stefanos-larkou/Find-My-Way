@@ -1,5 +1,23 @@
-import type { CellState, HexMap } from "./models";
+import type { CellState, Hex, HexMap, SearchEvent } from "./models";
 import { createMap, setCell } from "./grid";
+
+export function mapFrom(rows: string[]): HexMap {
+    const map = createMap(rows[0]?.length ?? 0, rows.length);
+
+    rows.forEach((row, r) => {
+        [...row].forEach((symbol, q) => setCell(map, { q, r }, stateFrom(symbol)));
+    });
+
+    return map;
+}
+
+export function pathOf(events: SearchEvent[]): Hex[] {
+    for (const event of events) {
+        if (event.type === "path") return event.hexes;
+    }
+
+    return [];
+}
 
 function stateFrom(symbol: string): CellState {
     switch (symbol) {
@@ -12,14 +30,4 @@ function stateFrom(symbol: string): CellState {
         default:
             throw new Error(`Unknown map symbol: ${symbol}`);
     }
-}
-
-export function mapFrom(rows: string[]): HexMap {
-    const map = createMap(rows[0]?.length ?? 0, rows.length);
-
-    rows.forEach((row, r) => {
-        [...row].forEach((symbol, q) => setCell(map, { q, r }, stateFrom(symbol)));
-    });
-
-    return map;
 }
