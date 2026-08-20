@@ -1,5 +1,6 @@
 import { hexDistance, indexOf, isOpen, neighbours, sameHex } from "../grid";
 import type { Hex, HexMap, SearchEvent } from "../models";
+import { takeBestBy } from "./frontier";
 import { buildPath } from "./path";
 
 export function aStar(map: HexMap, start: Hex, end: Hex): SearchEvent[] {
@@ -14,7 +15,7 @@ export function aStar(map: HexMap, start: Hex, end: Hex): SearchEvent[] {
 
     cost[indexOf(map, start)] = 0;
 
-    let current = takeBest(map, open, cost, end);
+    let current = takeBestBy(open, hex => totalCost(map, cost, end, hex));
     while (current) {
         const index = indexOf(map, current);
 
@@ -38,28 +39,12 @@ export function aStar(map: HexMap, start: Hex, end: Hex): SearchEvent[] {
             }
         }
 
-        current = takeBest(map, open, cost, end);
+        current = takeBestBy(open, hex => totalCost(map, cost, end, hex));
     }
 
     return events;
 }
 
-function takeBest(map: HexMap, open: Hex[], cost: number[], end: Hex): Hex | undefined {
-    let bestAt = 0;
-    let bestScore = Infinity;
-
-    open.forEach((hex, position) => {
-        const score = (cost[indexOf(map, hex)] ?? Infinity) + hexDistance(hex, end);
-
-        if (score < bestScore) {
-            bestScore = score;
-            bestAt = position;
-        }
-    });
-
-    const best = open[bestAt];
-    const last = open.pop();
-    if (last !== undefined && bestAt < open.length) open[bestAt] = last;
-
-    return best;
+function totalCost(map: HexMap, cost: number[], end: Hex, hex: Hex): number {
+    return (cost[indexOf(map, hex)] ?? Infinity) + hexDistance(hex, end);
 }

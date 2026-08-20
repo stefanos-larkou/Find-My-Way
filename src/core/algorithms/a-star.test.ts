@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { breadthFirst } from "./breadth-first";
 import { aStar } from "./a-star";
-import { mapFrom, pathOf } from "../test-maps";
-import type { SearchEvent } from "../models";
+import { mapFrom, pathOf, visitsOf } from "../test-maps";
 
 const OPEN_MAP = [
     "..........",
@@ -11,10 +10,6 @@ const OPEN_MAP = [
     "..........",
     ".........."
 ];
-
-function visits(events: SearchEvent[]): number {
-    return events.filter(event => event.type === "visit").length;
-}
 
 describe("aStar", () => {
     it("finds a route as short as breadth-first does", () => {
@@ -28,6 +23,6 @@ describe("aStar", () => {
         const map = mapFrom(OPEN_MAP);
         const start = { q: 0, r: 0 };
         const end = { q: 9, r: 4 };
-        expect(visits(aStar(map, start, end))).toBeLessThan(visits(breadthFirst(map, start, end)));
+        expect(visitsOf(aStar(map, start, end))).toBeLessThan(visitsOf(breadthFirst(map, start, end)));
     });
 });

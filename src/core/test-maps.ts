@@ -19,6 +19,10 @@ export function pathOf(events: SearchEvent[]): Hex[] {
     return [];
 }
 
+export function visitsOf(events: SearchEvent[]): number {
+    return events.filter(event => event.type === "visit").length;
+}
+
 function stateFrom(symbol: string): CellState {
     switch (symbol) {
         case ".":
