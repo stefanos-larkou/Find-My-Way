@@ -115,6 +115,7 @@ export interface SceneOptions {
     walls?: ReadonlySet<number>;
     weights?: ReadonlyMap<number, number>;
     chosen?: Partial<HexPair>;
+    autoPlay?: boolean;
 }
 
 export interface Scene {

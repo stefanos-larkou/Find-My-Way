@@ -41,7 +41,7 @@ export function useSearchScene(options: SceneOptions): Scene {
     );
     const search = useMemo(() => searchOn(map, endpoints, ALGORITHMS[algorithm].search), [map, endpoints, algorithm]);
     const view = useMemo(() => layoutFor(baseMap, available), [baseMap, available]);
-    const playback = usePlayback(search.events.length, speed);
+    const playback = usePlayback(search.events.length, speed, options.autoPlay ?? false);
     const roles = useMemo(() => rolesAt(map, search, playback.index), [map, search, playback.index]);
     const hexes = useMemo(() => hexesToDraw(map, roles, view, mode), [map, roles, view, mode]);
     const revealed = useMemo(() => pathAt(search.events, playback.index), [search.events, playback.index]);

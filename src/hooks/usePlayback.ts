@@ -3,10 +3,10 @@ import { EMPTY_INDEX, MAX_FRAME_MS } from "../core/constants";
 import { advanceIndex, clampIndex, lastIndex, stepIndex } from "./playback";
 import type { Playback } from "../core/models";
 
-export function usePlayback(eventCount: number, eventsPerSecond: number): Playback {
+export function usePlayback(eventCount: number, eventsPerSecond: number, autoPlay = false): Playback {
     const [index, setIndex] = useState(EMPTY_INDEX);
-    const [playing, setPlaying] = useState(false);
-    const [started, setStarted] = useState(false);
+    const [playing, setPlaying] = useState(autoPlay);
+    const [started, setStarted] = useState(autoPlay);
     const indexRef = useRef(EMPTY_INDEX);
 
     useEffect(() => {
