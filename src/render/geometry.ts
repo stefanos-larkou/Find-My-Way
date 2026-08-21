@@ -1,6 +1,6 @@
 import { MAX_HEX_SIZE } from "../core/constants";
 import type { FractionalHex, Hex, HexMap, Pixel, ViewLayout } from "../core/models";
-import { presentCells } from "../core/grid";
+import { hexDistance, presentCells } from "../core/grid";
 
 interface Extent {
     minX: number;
@@ -84,6 +84,17 @@ export function roundHex(fractional: FractionalHex): Hex {
     if (deltaZ >= deltaY) return hexOf(roundedX, -roundedX - roundedY);
     return hexOf(roundedX, roundedZ);
 }
+
+export function hexLine(from: Hex, to: Hex): Hex[] {
+    const steps = hexDistance(from, to);
+    if (steps === 0) return [];
+
+    return Array.from({ length: steps }, (_, step) => roundHex({
+        q: from.q + (to.q - from.q) * (step + 1) / steps,
+        r: from.r + (to.r - from.r) * (step + 1) / steps
+    }));
+}
+
 
 function hexOf(q: number, r: number): Hex {
     return { q: q === 0 ? 0 : q, r: r === 0 ? 0 : r };

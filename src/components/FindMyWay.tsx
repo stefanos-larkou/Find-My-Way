@@ -14,7 +14,7 @@ import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
 import { useElementSize } from "../hooks/useElementSize";
 import { usePersistedNumber } from "../hooks/usePersistedNumber";
-import { pixelToHex, roundHex } from "../render/geometry";
+import { hexLine, pixelToHex, roundHex } from "../render/geometry";
 import { paletteFor, veilFor } from "../render/palette";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
@@ -73,6 +73,7 @@ export function FindMyWay() {
     const theme = useTheme();
     const mapAreaRef = useRef<HTMLDivElement>(null);
     const strokeRef = useRef<Stroke | undefined>(undefined);
+    const lastHexRef = useRef<Hex | undefined>(undefined);
     const available = useElementSize(mapAreaRef);
     const [seed, setSeed] = useState(() => Date.now());
     const [cellCount, setCellCount] = usePersistedNumber(CELL_COUNT_KEY, DEFAULT_CELL_COUNT, MIN_CELL_COUNT, MAX_CELL_COUNT);
@@ -200,6 +201,7 @@ export function FindMyWay() {
             if (cellAt(map, hex) !== "open") return;
 
             strokeRef.current = { kind: "weight", weight: brush };
+            lastHexRef.current = hex;
             event.currentTarget.setPointerCapture(event.pointerId);
             paintWeight(hex, brush);
             return;
@@ -207,23 +209,29 @@ export function FindMyWay() {
 
         const stroke: WallStroke = cellAt(map, hex) === "wall" ? "remove" : "add";
         strokeRef.current = { kind: "wall", stroke };
+        lastHexRef.current = hex;
         event.currentTarget.setPointerCapture(event.pointerId);
         paint(hex, stroke);
     }, [hexUnder, mode, map, endpoints, editable, paint, paintWeight, brush, playback]);
 
     const continueStroke = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
         const stroke = strokeRef.current;
-        if (!stroke) return;
+        const last = lastHexRef.current;
+        if (!stroke || !last) return;
 
         const hex = hexUnder(event);
-        if (!editable(hex)) return;
+        lastHexRef.current = hex;
 
-        if (stroke.kind === "weight") {
-            if (cellAt(map, hex) === "open") paintWeight(hex, stroke.weight);
-            return;
-        }
+        hexLine(last, hex).forEach(step => {
+            if (!editable(step)) return;
 
-        paint(hex, stroke.stroke);
+            if (stroke.kind === "weight") {
+                if (cellAt(map, step) === "open") paintWeight(step, stroke.weight);
+                return;
+            }
+
+            paint(step, stroke.stroke);
+        });
     }, [hexUnder, editable, paint, paintWeight, map]);
 
     const trackPointer = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
