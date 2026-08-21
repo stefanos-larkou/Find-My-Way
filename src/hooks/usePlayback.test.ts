@@ -61,4 +61,11 @@ describe("usePlayback", () => {
         expect(result.current.index).toBe(EMPTY_INDEX);
         expect(result.current.playing).toBe(false);
     });
+
+    it("starts playing when asked to", () => {
+        const { result } = renderHook(() => usePlayback(EVENT_COUNT, SPEED, true));
+        expect(result.current.playing).toBe(true);
+        expect(result.current.started).toBe(true);
+    });
+
 });
