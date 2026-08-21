@@ -4,14 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FindMyWay } from "./FindMyWay";
 import { ALGORITHMS } from "../core/algorithms/registry";
+import { prepareCanvas } from "../render/draw";
 
-function renderVisualiser() {
-    render(
-        <ThemeProvider theme={createTheme()}>
-            <FindMyWay />
-        </ThemeProvider>
-    );
-}
+vi.mock("../render/draw", { spy: true });
 
 beforeEach(() => {
     localStorage.clear();
@@ -23,7 +18,20 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
+function renderVisualiser() {
+    render(
+        <ThemeProvider theme={createTheme()}>
+            <FindMyWay />
+        </ThemeProvider>
+    );
+}
+
 describe("FindMyWay", () => {
+    it("prepares the canvas", () => {
+        renderVisualiser();
+        expect(prepareCanvas).toHaveBeenCalledWith(expect.any(HTMLCanvasElement), expect.anything());
+    });
+
     it("returns the playback to the start when replayed", async () => {
         renderVisualiser();
         await userEvent.click(screen.getByRole("button", { name: "Step forward 1 event" }));

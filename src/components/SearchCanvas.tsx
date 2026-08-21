@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
-import { useEffect, useRef } from "react";
-import type { PointerEvent } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import type { PointerEvent, Ref } from "react";
 import type { DrawnHex, DrawnSegment, ViewLayout } from "../core/models";
 import { drawMap, drawRoute, prepareCanvas } from "../render/draw";
 import { routeWidthFor } from "../render/layout";
@@ -9,6 +9,7 @@ interface SearchCanvasProps {
     view: ViewLayout;
     hexes: DrawnHex[];
     route: DrawnSegment[];
+    ref?: Ref<HTMLCanvasElement>;
     onPointerDown?: (event: PointerEvent<HTMLCanvasElement>) => void;
     onPointerMove?: (event: PointerEvent<HTMLCanvasElement>) => void;
     onPointerUp?: (event: PointerEvent<HTMLCanvasElement>) => void;
@@ -16,9 +17,16 @@ interface SearchCanvasProps {
     onPointerLeave?: (event: PointerEvent<HTMLCanvasElement>) => void;
 }
 
-export function SearchCanvas({ view, hexes, route, ...pointer }: SearchCanvasProps) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+export function SearchCanvas({ view, hexes, route, ref, ...pointer }: SearchCanvasProps) {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const contextRef = useRef<CanvasRenderingContext2D | undefined>(undefined);
+
+    const attach = useCallback((node: HTMLCanvasElement | null) => {
+        canvasRef.current = node;
+
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+    }, [ref]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -37,7 +45,7 @@ export function SearchCanvas({ view, hexes, route, ...pointer }: SearchCanvasPro
     return (
         <Box
             component="canvas"
-            ref={canvasRef}
+            ref={attach}
             {...pointer}
             sx={{ display: "block", maxWidth: "100%", cursor: "pointer", touchAction: "none" }}
         />
