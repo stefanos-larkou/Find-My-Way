@@ -1,3 +1,5 @@
+import type { AlgorithmName } from "./algorithms/registry";
+
 export type Nullable<T> = T | null | undefined;
 
 export interface FractionalHex {
@@ -100,4 +102,30 @@ export interface Playback {
     step: (direction: number) => void;
     scrubTo: (index: number) => void;
     reset: () => void;
+}
+
+export interface SceneOptions {
+    seed: number;
+    cellCount: number;
+    complexity: number;
+    speed: number;
+    algorithm: AlgorithmName;
+    terrain: boolean;
+    available: Pixel;
+    walls?: ReadonlySet<number>;
+    weights?: ReadonlyMap<number, number>;
+    chosen?: Partial<HexPair>;
+}
+
+export interface Scene {
+    baseMap: HexMap;
+    map: HexMap;
+    endpoints: HexPair;
+    search: Search;
+    view: ViewLayout;
+    playback: Playback;
+    hexes: DrawnHex[];
+    route: DrawnSegment[];
+    outcome: Outcome;
+    finished: boolean;
 }

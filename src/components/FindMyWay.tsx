@@ -5,34 +5,28 @@ import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import { Box, Button, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
-import type { Hex, HexMap, HexPair, Search, WallStroke } from "../core/models";
-import { outcomeOf, pathAt } from "../core/outcome";
+import type { Hex, HexPair, WallStroke } from "../core/models";
 import { CONTROLS_WIDTH, DEFAULT_CELL_COUNT, DEFAULT_COMPLEXITY_SLIDER, DEFAULT_SPEED_SLIDER, DEFAULT_STEP_SIZE, MAX_CELL_COUNT, MAX_STEP_SIZE, MAX_WEIGHT, MIN_CELL_COUNT, MIN_STEP_SIZE, MIN_WEIGHT, EMPTY_INDEX, MODE_GROUP_WIDTH, SLIDER_MAX, SLIDER_MIN, TRANSPORT_BUTTONS_WIDTH, WEIGHTS } from "../core/constants";
-import { furthestApart } from "../core/furthest";
-import { generateMap, optionsFor } from "../core/generation";
-import { cellAt, endpointAt, indexOf, sameHex, withPlainGround, withWalls, withWeights } from "../core/grid";
-import { createRandom } from "../core/random";
+import { cellAt, endpointAt, indexOf, sameHex } from "../core/grid";
 import { complexityFrom, speedFrom } from "../core/scales";
 import { lastIndex } from "../hooks/playback";
 import { useElementSize } from "../hooks/useElementSize";
 import { usePersistedNumber } from "../hooks/usePersistedNumber";
-import { usePlayback } from "../hooks/usePlayback";
-import { drawMap, drawRoute, prepareCanvas } from "../render/draw";
-import { layoutFor, pixelToHex, roundHex } from "../render/geometry";
-import { hexesToDraw, routeToDraw, routeWidthFor } from "../render/layout";
+import { pixelToHex, roundHex } from "../render/geometry";
 import { paletteFor, veilFor } from "../render/palette";
-import { rolesAt } from "../render/roles";
 import { ControlSlider } from "./ControlSlider";
 import { NumberField } from "./NumberField";
 import { HexSwatch } from "./HexSwatch";
 import { RouteSummary } from "./RouteSummary";
-import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName, type SearchFn } from "../core/algorithms/registry";
+import { ALGORITHM_NAMES, ALGORITHMS, type AlgorithmName } from "../core/algorithms/registry";
 import { usePersistedFlag } from "../hooks/usePersistedFlag";
 import { usePersistedChoice } from "../hooks/usePersistedChoice";
 import { CELL_COUNT_KEY, COMPLEXITY_KEY, ALGORITHM_KEY, BRUSH_KEY, MODE_KEY, SPEED_KEY, STEP_SIZE_KEY, TERRAIN_KEY } from "../core/storage";
 import { weighted, painted } from "../core/overlays";
+import { useSearchScene } from "../hooks/useSearchScene";
+import { SearchCanvas } from "./SearchCanvas";
 
 type EditMode = "wall" | "start" | "end" | "weight";
 type Stroke = { kind: "wall"; stroke: WallStroke; } | { kind: "weight"; weight: number; };
@@ -72,14 +66,11 @@ const HINTS = {
 
 const PILL_ROW_WIDTH = "72%";
 
-const ORIGIN: Hex = { q: 0, r: 0 };
 const EDIT_MODES: EditMode[] = ["wall", "weight", "start", "end"];
 const PLAIN_MODES: EditMode[] = ["wall", "start", "end"];
 
 export function FindMyWay() {
     const theme = useTheme();
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const contextRef = useRef<CanvasRenderingContext2D | undefined>(undefined);
     const mapAreaRef = useRef<HTMLDivElement>(null);
     const strokeRef = useRef<Stroke | undefined>(undefined);
     const available = useElementSize(mapAreaRef);
@@ -97,33 +88,20 @@ export function FindMyWay() {
     const [brush, setBrush] = usePersistedNumber(BRUSH_KEY, MAX_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
     const [hovered, setHovered] = useState("");
 
-    const baseMap = useMemo(
-        () => generateMap(optionsFor(cellCount, complexityFrom(complexitySlider)), createRandom(seed)),
-        [cellCount, complexitySlider, seed]
-    );
-    const defaults = useMemo(() => furthestApart(baseMap), [baseMap]);
-    const endpoints = useMemo<HexPair>(() => ({
-        start: chosen.start ?? defaults?.start ?? ORIGIN,
-        end: chosen.end ?? defaults?.end ?? ORIGIN
-    }), [chosen, defaults]);
-    const map = useMemo(
-        () => withPlainGround(withWeights(withWalls(baseMap, walls), paintedWeights, terrain), [endpoints.start, endpoints.end]),
-        [baseMap, walls, paintedWeights, terrain, endpoints]
-    );
-    const search = useMemo(() => searchOn(map, endpoints, ALGORITHMS[algorithm].search), [map, endpoints, algorithm]);
-    const view = useMemo(() => layoutFor(baseMap, available), [baseMap, available]);
-    const speed = useMemo(() => speedFrom(speedSlider), [speedSlider]);
-    const playback = usePlayback(search.events.length, speed);
-    const roles = useMemo(() => rolesAt(map, search, playback.index), [map, search, playback.index]);
-    const hexes = useMemo(
-        () => hexesToDraw(map, roles, view, theme.palette.mode),
-        [map, roles, theme.palette.mode, view]
-    );
+    const scene = useSearchScene({
+        seed,
+        cellCount,
+        complexity: complexityFrom(complexitySlider),
+        speed: speedFrom(speedSlider),
+        algorithm,
+        terrain,
+        available,
+        walls,
+        weights: paintedWeights,
+        chosen
+    });
+    const { baseMap, map, endpoints, search, view, playback, hexes, route, outcome, finished } = scene;
     const palette = useMemo(() => paletteFor(theme.palette.mode), [theme.palette.mode]);
-    const revealed = useMemo(() => pathAt(search.events, playback.index), [search.events, playback.index]);
-    const route = useMemo(() => routeToDraw(revealed, view, theme.palette.mode), [revealed, view, theme.palette.mode]);
-    const outcome = useMemo(() => outcomeOf(map, search.events), [map, search.events]);
-    const finished = playback.started && search.events.length > 0 && playback.index >= lastIndex(search.events.length);
 
     const restart = useCallback(() => {
         setWalls(new Set());
@@ -263,19 +241,6 @@ export function FindMyWay() {
         strokeRef.current = undefined;
         playback.reset();
     }, [playback]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        contextRef.current = prepareCanvas(canvas, view.canvas);
-    }, [view]);
-
-    useEffect(() => {
-        const context = contextRef.current;
-        if (!context) return;
-        drawMap(context, hexes);
-        drawRoute(context, route, routeWidthFor(view.hexSize));
-    }, [hexes, route, view]);
 
     return (
         <Box
@@ -419,15 +384,15 @@ export function FindMyWay() {
                 }}
             >
                 <Tooltip title={hovered} open={hovered !== ""} followCursor placement="top">
-                    <Box
-                        component="canvas"
-                        ref={canvasRef}
+                    <SearchCanvas
+                        view={view}
+                        hexes={hexes}
+                        route={route}
                         onPointerDown={beginStroke}
                         onPointerMove={trackPointer}
                         onPointerUp={endStroke}
                         onPointerCancel={endStroke}
                         onPointerLeave={leaveCanvas}
-                        sx={{ display: "block", maxWidth: "100%", cursor: "pointer", touchAction: "none" }}
                     />
                 </Tooltip>
             </Box>
@@ -527,10 +492,6 @@ function weightLabel(weight: number): string {
 function stepLabel(steps: number): string {
     const size = Math.abs(steps);
     return `Step ${steps < 0 ? "back" : "forward"} ${size} event${size === 1 ? "" : "s"}`;
-}
-
-function searchOn(map: HexMap, pair: HexPair, search: SearchFn): Search {
-    return { events: search(map, pair.start, pair.end), start: pair.start, end: pair.end };
 }
 
 function eventCounter(index: number, eventCount: number): string {
