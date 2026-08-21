@@ -5,7 +5,7 @@ import { useElementSize } from "../hooks/useElementSize";
 import { useSearchScene } from "../hooks/useSearchScene";
 import { SearchCanvas } from "./SearchCanvas";
 
-interface AutoSearchProps {
+export interface AutoSearchProps {
     seed: number;
     cellCount: number;
     complexity: number;
