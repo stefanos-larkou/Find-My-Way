@@ -348,15 +348,19 @@ export function FindMyWay() {
                         sx={{ width: "100%", mt: "-1px" }}
                     >
                         <Tooltip describeChild title={HINTS.wall}>
-                            <ToggleButton value="wall">
-                                <HexSwatch fill={palette.wall.fill} />{LABELS.wall}
-                            </ToggleButton>
+                            <Box component="span" sx={{ display: "flex", flex: 1, minWidth: 0 }}>
+                                <ToggleButton value="wall" fullWidth>
+                                    <HexSwatch fill={palette.wall.fill} />{LABELS.wall}
+                                </ToggleButton>
+                            </Box>
                         </Tooltip>
                         {WEIGHTS.map(weight => (
                             <Tooltip key={weight} describeChild title={HINTS.weight}>
-                                <ToggleButton value={weight} disabled={!terrain} aria-label={weightLabel(weight)}>
-                                    <HexSwatch fill={palette.open.fill} veil={veilFor(theme.palette.mode, weight)} />{weight}
-                                </ToggleButton>
+                                <Box component="span" sx={{ display: "flex", flex: 1, minWidth: 0 }}>
+                                    <ToggleButton value={weight} disabled={!terrain} aria-label={weightLabel(weight)} fullWidth>
+                                        <HexSwatch fill={palette.open.fill} veil={veilFor(theme.palette.mode, weight)} />{weight}
+                                    </ToggleButton>
+                                </Box>
                             </Tooltip>
                         ))}
                     </ToggleButtonGroup>
