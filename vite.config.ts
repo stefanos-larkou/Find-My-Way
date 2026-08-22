@@ -13,6 +13,7 @@ export default defineConfig({
 
     ],
     build: {
+        copyPublicDir: false,
         lib: {
             entry: "src/index.ts",
             formats: ["es"],
