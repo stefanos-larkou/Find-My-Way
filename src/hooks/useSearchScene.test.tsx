@@ -1,11 +1,11 @@
 import { ThemeProvider, createTheme } from "@mui/material";
+import { lastIndex } from "@stefanos-larkou/sim-kit";
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { ReactNode } from "react";
 import { MAX_WEIGHT } from "../core/constants";
 import { cellAt, indexOf, openCells, sameHex, weightAt } from "../core/grid";
 import type { Hex, Scene, SceneOptions } from "../core/models";
-import { lastIndex } from "./playback";
 import { useSearchScene } from "./useSearchScene";
 
 const BASE: SceneOptions = {

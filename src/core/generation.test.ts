@@ -1,3 +1,4 @@
+import { createRandom } from "@stefanos-larkou/sim-kit";
 import { describe, expect, it } from "vitest";
 import type { HexMap } from "./models";
 import { MAX_WEIGHT, MIN_WEIGHT, UNREACHABLE } from "./constants";
@@ -5,7 +6,6 @@ import { distancesFrom } from "./distances";
 import { furthestApart } from "./furthest";
 import { generateMap, optionsFor } from "./generation";
 import { indexOf, neighbours, openCells, weightAt } from "./grid";
-import { createRandom } from "./random";
 
 function reachableCount(map: HexMap): number {
     const start = openCells(map)[0];

@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_COMPLEXITY, MAX_EVENTS_PER_SECOND, MIN_EVENTS_PER_SECOND } from "./constants";
-import { complexityFrom, speedFrom, withinRange } from "./scales";
-
-describe("withinRange", () => {
-    it("holds a value inside the range", () => {
-        expect(withinRange(150, 1, 100)).toBe(100);
-        expect(withinRange(-5, 1, 100)).toBe(1);
-        expect(withinRange(42, 1, 100)).toBe(42);
-    });
-
-    it("falls back to the minimum for a value that is not a number", () => {
-        expect(withinRange(Number.NaN, 30, 1000)).toBe(30);
-    });
-});
+import { complexityFrom, speedFrom } from "./scales";
 
 describe("complexityFrom", () => {
     it("maps the slider range onto the range that changes the shape", () => {

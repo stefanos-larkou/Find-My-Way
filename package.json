@@ -25,6 +25,9 @@
         "test": "vitest run",
         "preview": "vite preview"
     },
+    "dependencies": {
+        "@stefanos-larkou/sim-kit": "github:stefanos-larkou/sim-kit"
+    },
     "peerDependencies": {
         "@emotion/react": ">=11.0.0",
         "@emotion/styled": ">=11.0.0",

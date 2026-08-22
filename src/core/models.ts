@@ -1,3 +1,4 @@
+import type { Playback } from "@stefanos-larkou/sim-kit";
 import type { AlgorithmName } from "./algorithms/registry";
 
 export type Nullable<T> = T | null | undefined;
@@ -92,16 +93,6 @@ export interface DrawnSegment {
     from: Pixel;
     to: Pixel;
     colour: string;
-}
-
-export interface Playback {
-    index: number;
-    playing: boolean;
-    started: boolean;
-    toggle: () => void;
-    step: (direction: number) => void;
-    scrubTo: (index: number) => void;
-    reset: () => void;
 }
 
 export interface SceneOptions {

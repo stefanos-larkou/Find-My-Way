@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
+import { useElementSize } from "@stefanos-larkou/sim-kit";
 import { useEffect, useRef } from "react";
 import type { AlgorithmName } from "../core/algorithms/registry";
-import { useElementSize } from "../hooks/useElementSize";
 import { useSearchScene } from "../hooks/useSearchScene";
 import { SearchCanvas } from "./SearchCanvas";
 

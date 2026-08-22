@@ -20,7 +20,7 @@ export default defineConfig({
             fileName: "find-my-way"
         },
         rollupOptions: {
-            external: [/^react($|\/)/, /^react-dom($|\/)/, /^@mui\//, /^@emotion\//]
+            external: [/^react($|\/)/, /^react-dom($|\/)/, /^@mui\//, /^@emotion\//, /^@stefanos-larkou\//]
         }
     },
     test: {

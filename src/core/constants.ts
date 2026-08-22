@@ -20,10 +20,6 @@ export const BOX_SLACK_PER_COMPLEXITY = 2;
 export const MIN_EVENTS_PER_SECOND = 1;
 export const MAX_EVENTS_PER_SECOND = 2000;
 
-export const EMPTY_INDEX = -1;
-
-export const MAX_FRAME_MS = 100;
-
 export const DEFAULT_CELL_COUNT = 150;
 
 export const MIN_CELL_COUNT = 30;

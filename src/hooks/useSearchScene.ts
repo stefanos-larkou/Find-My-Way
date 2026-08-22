@@ -1,4 +1,5 @@
 import { useTheme } from "@mui/material/styles";
+import { createRandom, lastIndex, usePlayback } from "@stefanos-larkou/sim-kit";
 import { useMemo } from "react";
 import type { Hex, HexMap, HexPair, Scene, SceneOptions, Search } from "../core/models";
 import { ALGORITHMS, type SearchFn } from "../core/algorithms/registry";
@@ -6,12 +7,9 @@ import { furthestApart } from "../core/furthest";
 import { generateMap, optionsFor } from "../core/generation";
 import { withPlainGround, withWalls, withWeights } from "../core/grid";
 import { outcomeOf, pathAt } from "../core/outcome";
-import { createRandom } from "../core/random";
 import { layoutFor } from "../render/geometry";
 import { hexesToDraw, routeToDraw } from "../render/layout";
 import { rolesAt } from "../render/roles";
-import { lastIndex } from "./playback";
-import { usePlayback } from "./usePlayback";
 
 const ORIGIN: Hex = { q: 0, r: 0 };
 const NO_WALLS: ReadonlySet<number> = new Set();
