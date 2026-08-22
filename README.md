@@ -58,6 +58,7 @@ container, and every control persisted to `localStorage` under `find-my-way:*`.
 | Language | TypeScript 6.0 |
 | UI | MUI 9 with Emotion |
 | Rendering | Canvas 2D |
+| Shared foundation | [sim-kit](https://github.com/stefanos-larkou/sim-kit) for playback, controls and persistence |
 | Build | Vite 8, library mode with `vite-plugin-dts` |
 | Tests | Vitest 4 with jsdom and React Testing Library |
 
@@ -67,6 +68,9 @@ The library is a thin shell of React around a core that knows nothing about Reac
 canvas. Every search, every piece of geometry and every scale is a pure function, which is where
 almost all of the test coverage lives.
 
+Everything with no opinion about hexes lives in **sim-kit** instead: the playback transport, the
+seeded generator, the slider and numeric controls, the persistence hooks and the element-size hook.
+
 ### Repository layout
 
 ```text
@@ -74,8 +78,8 @@ src/
   core/            Pure logic - no React, no DOM, no canvas
     algorithms/    One search per file, plus the registry that names them
   render/          Canvas drawing and the geometry it needs
-  components/      MUI controls and the component shell
-  hooks/           React state and effects
+  components/      The component shell and the hex-specific controls
+  hooks/           useSearchScene, which assembles the whole derived chain
   dev/             Local harness for debugging, not shipped
 ```
 
@@ -95,18 +99,15 @@ Three things follow from this:
 
 - **Scrubbing is free.** Any position in the search is one slice away, backwards or forwards.
 - **Tests can assert a sequence** without rendering anything.
-- **Speed is decoupled from frame rate.** The index advances by elapsed time multiplied by the
-    rate.
+- **Speed is decoupled from frame rate**, so a slower display covers the same ground in fewer,
+    larger steps rather than running the search more slowly.
 
 The index starts at `-1`, meaning nothing revealed, so a search that finds nothing still visibly
 tries rather than sitting at its first event from the outset.
 
-On the last point, `requestAnimationFrame` fires once per display refresh, so a 60Hz screen gives
-a frame every `1 / 60 = 16.67ms`. `advanceIndex` turns that into a distance:
-
-```text
-16.67ms / 1000 x 2000 events per second = 33.3 events in that frame
-```
+The index itself is not this repository's. `usePlayback`, the frame loop and the arithmetic that
+moves the index all live in [sim-kit](https://github.com/stefanos-larkou/sim-kit), which documents
+the timing in detail.
 
 ### Axial coordinates
 
@@ -162,7 +163,11 @@ npm start
 | `npm test` | Vitest, headless |
 | `npm run lint` | ESLint |
 | `npm run build` | Library bundle and type declarations into `dist/` |
-| `npm run check` | Lint, test and build - what CI runs |
+| `npm run check` | Lint, test and build |
+
+CI runs lint and test only. The build happens inside `npm ci`, because `prepare` builds `dist/` and
+scripts have to run for the sim-kit git dependency to build its own, so a separate build step
+would build this package twice.
 
 ## Using it in an application
 
@@ -172,11 +177,25 @@ Install it as a git dependency. There is no published package:
 npm i github:stefanos-larkou/Find-My-Way
 ```
 
-`prepare` builds `dist/` on install, so the consumer never sees TypeScript source.
+`prepare` builds `dist/` on install, so the consumer never sees TypeScript source. sim-kit comes
+with it as a nested git dependency and builds itself the same way, which puts two requirements on
+the host:
+
+- **Do not install with `npm ci --ignore-scripts`.** Neither package's `dist` would be built, and
+  both would resolve to files that do not exist.
+- **A CI runner needs the https rewrite**, because npm records `github:` dependencies as ssh URLs
+  in the lockfile and a runner has no key:
+
+  ```bash
+  git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+  ```
+
+Lockfiles pin commit SHAs, so a new version of either package reaches the host only through
+`npm update`, not `npm install`.
 
 ### FindMyWay
 
-The whole visualiser, controls and all. Takes no props - it owns its own state and persists it.
+The whole visualiser, controls and all. Takes no props, it owns its own state and persists it.
 
 ```tsx
 import { FindMyWay } from "@stefanos-larkou/find-my-way";
@@ -236,9 +255,13 @@ matches Dijkstra's cost for fewer visits.
 Random output is tested by its invariants rather than its value: a generated map has the requested
 number of cells, is fully connected, and is windier at higher complexity.
 
-The canvas itself is not tested. jsdom has no rendering context, so the drawing code is kept free of
-decisions and the decisions are tested where they are made. What _is_ tested is that a canvas was
-found and prepared.
+The canvas itself is not tested. jsdom has no rendering context, so the drawing code is kept free
+of decisions and the decisions are tested where they are made. What _is_ tested is that a canvas
+was found and prepared.
+
+`test-setup.ts` stubs what jsdom lacks. The `ResizeObserver` stub comes from `sim-kit/testing`,
+since every consumer of `useElementSize` needs the same one The null canvas context stays here,
+because the two visualisers need different ones.
 
 ## Licence
 
