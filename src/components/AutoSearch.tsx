@@ -38,7 +38,18 @@ export function AutoSearch({ seed, cellCount, complexity, speed, algorithm, terr
     }, [finished, onFinished]);
 
     return (
-        <Box ref={areaRef} sx={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+        <Box
+            ref={areaRef}
+            sx={{
+                display: "flex",
+                width: "100%",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                "& canvas": { touchAction: "auto", cursor: "inherit" }
+            }}
+        >
             <SearchCanvas view={view} hexes={hexes} route={route} />
         </Box>
     );
