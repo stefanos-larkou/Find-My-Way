@@ -236,8 +236,15 @@ each instance owns an animation frame loop and redraws every cell.
 The library never calls `createTheme`. It reads the host's theme through context, which holds only
 while there is **one copy** of React, MUI and Emotion in the tree. A second copy is not an error, the component simply reads a default theme and the host's palette silently fails to apply.
 
-It reads only tokens every host has: `palette.primary`, `palette.background`, `spacing`,
-`breakpoints`, and `palette.mode` to choose between the light and dark canvas palettes.
+It reads only tokens every host has: `palette.primary`, `palette.background`, `spacing` and
+`breakpoints`.
+
+Whether to draw the board light or dark comes from `useThemeMode` in
+[sim-kit](https://github.com/stefanos-larkou/sim-kit), **not** from `palette.mode`. A host using
+MUI's CSS variables switches scheme by swapping a class and never replaces the theme object, so
+`palette.mode` is stuck at its build-time value and the board would keep one palette whatever the
+toggle said. The kit's hook reads the scheme the host is showing and falls back to `palette.mode`
+for a plain theme.
 
 ## Testing
 
