@@ -23,6 +23,15 @@ function wrapper({ children }: { children: ReactNode; }) {
 
 }
 
+const VARIABLE = createTheme({ cssVariables: { colorSchemeSelector: "class" }, colorSchemes: { light: true, dark: true } });
+
+function schemed(mode: "light" | "dark") {
+    function themed({ children }: { children: ReactNode; }) {
+        return <ThemeProvider theme={VARIABLE} defaultMode={mode} noSsr>{children}</ThemeProvider>;
+    }
+    return renderHook(() => useSearchScene(BASE), { wrapper: themed }).result;
+}
+
 function sceneOf(options: SceneOptions) {
     return renderHook(() => useSearchScene(options), { wrapper }).result;
 }
@@ -83,5 +92,12 @@ describe("useSearchScene", () => {
 
     it("starts playing when asked to", () => {
         expect(sceneOf({ ...BASE, autoPlay: true }).current.playback.playing).toBe(true);
+    });
+
+    it("draws in the colours a variable theme is showing, not the ones it was built with", () => {
+        const light = schemed("light").current.hexes[0]?.style;
+        const dark = schemed("dark").current.hexes[0]?.style;
+        expect(light).toBeTruthy();
+        expect(dark).not.toEqual(light);
     });
 });

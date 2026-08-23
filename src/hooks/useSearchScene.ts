@@ -1,5 +1,4 @@
-import { useTheme } from "@mui/material/styles";
-import { createRandom, lastIndex, usePlayback } from "@stefanos-larkou/sim-kit";
+import { createRandom, lastIndex, usePlayback, useThemeMode } from "@stefanos-larkou/sim-kit";
 import { useMemo } from "react";
 import type { Hex, HexMap, HexPair, Scene, SceneOptions, Search } from "../core/models";
 import { ALGORITHMS, type SearchFn } from "../core/algorithms/registry";
@@ -17,8 +16,7 @@ const NO_WEIGHTS: ReadonlyMap<number, number> = new Map();
 const NO_CHOICE: Partial<HexPair> = {};
 
 export function useSearchScene(options: SceneOptions): Scene {
-    const theme = useTheme();
-    const mode = theme.palette.mode;
+    const mode = useThemeMode();
     const { seed, cellCount, complexity, speed, algorithm, terrain, available } = options;
     const walls = options.walls ?? NO_WALLS;
     const weights = options.weights ?? NO_WEIGHTS;

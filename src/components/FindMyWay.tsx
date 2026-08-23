@@ -4,8 +4,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import { Box, Button, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip, Typography, type SelectChangeEvent } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { ControlSlider, EMPTY_INDEX, NumberField, lastIndex, useElementSize, usePersistedChoice, usePersistedFlag, usePersistedNumber } from "@stefanos-larkou/sim-kit";
+import { ControlSlider, EMPTY_INDEX, NumberField, lastIndex, useElementSize, usePersistedChoice, usePersistedFlag, usePersistedNumber, useThemeMode } from "@stefanos-larkou/sim-kit";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, PointerEvent } from "react";
 import type { Hex, HexPair, WallStroke } from "../core/models";
@@ -64,7 +63,7 @@ const EDIT_MODES: EditMode[] = ["wall", "weight", "start", "end"];
 const PLAIN_MODES: EditMode[] = ["wall", "start", "end"];
 
 export function FindMyWay() {
-    const theme = useTheme();
+    const scheme = useThemeMode();
     const mapAreaRef = useRef<HTMLDivElement>(null);
     const strokeRef = useRef<Stroke | undefined>(undefined);
     const lastHexRef = useRef<Hex | undefined>(undefined);
@@ -96,7 +95,7 @@ export function FindMyWay() {
         chosen
     });
     const { baseMap, map, endpoints, search, view, playback, hexes, route, outcome, finished } = scene;
-    const palette = useMemo(() => paletteFor(theme.palette.mode), [theme.palette.mode]);
+    const palette = useMemo(() => paletteFor(scheme), [scheme]);
 
     const restart = useCallback(() => {
         setWalls(new Set());
@@ -352,7 +351,7 @@ export function FindMyWay() {
                             <Tooltip key={weight} describeChild title={HINTS.weight}>
                                 <Box component="span" sx={{ display: "flex", flex: 1, minWidth: 0 }}>
                                     <ToggleButton value={weight} disabled={!terrain} aria-label={weightLabel(weight)} fullWidth>
-                                        <HexSwatch fill={palette.open.fill} veil={veilFor(theme.palette.mode, weight)} />{weight}
+                                        <HexSwatch fill={palette.open.fill} veil={veilFor(scheme, weight)} />{weight}
                                     </ToggleButton>
                                 </Box>
                             </Tooltip>
