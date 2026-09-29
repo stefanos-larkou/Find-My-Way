@@ -11,7 +11,7 @@ describe("furthestApart", () => {
         });
     });
 
-    it("routes around a wall rather than through it", () => {
+    it("routes around a wall instead of through it", () => {
         const map = mapFrom([
             "..#",
             "..."

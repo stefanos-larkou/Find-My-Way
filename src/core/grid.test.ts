@@ -55,7 +55,7 @@ describe("setCell", () => {
 });
 
 describe("sameHex", () => {
-    it("compares by value rather than reference", () => {
+    it("compares by value and not by reference", () => {
         expect(sameHex({ q: 1, r: 2 }, { q: 1, r: 2 })).toBe(true);
         expect(sameHex({ q: 1, r: 2 }, { q: 2, r: 1 })).toBe(false);
     });

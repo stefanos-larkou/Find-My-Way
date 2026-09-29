@@ -16,7 +16,7 @@ describe("speedFrom", () => {
         expect(speedFrom(100)).toBeCloseTo(MAX_EVENTS_PER_SECOND);
     });
 
-    it("rises geometrically rather than linearly", () => {
+    it("rises geometrically and not linearly", () => {
         expect(speedFrom(50.5)).toBeLessThan((MIN_EVENTS_PER_SECOND + MAX_EVENTS_PER_SECOND) / 2);
     });
 });

@@ -44,8 +44,8 @@ scrubber holds, nothing is accumulated frame to frame. When the search finishes,
 the route's length and cost is shown.
 
 **The route**: Drawn as a line through the cells it passes, shaded from the start's colour to the
-end's, so a route that doubles back through a crowded region is still legible as a path rather than
-a blob.
+end's, so a route that doubles back through a crowded region still reads as a path instead of a
+blob.
 
 **Throughout**: Light and dark palettes chosen by the host's theme, a canvas that resizes with its
 container, and every control persisted to `localStorage` under `find-my-way:*`.
@@ -100,10 +100,10 @@ Three things follow from this:
 - **Scrubbing is free.** Any position in the search is one slice away, backwards or forwards.
 - **Tests can assert a sequence** without rendering anything.
 - **Speed is decoupled from frame rate**, so a slower display covers the same ground in fewer,
-    larger steps rather than running the search more slowly.
+    larger steps, and never by running the search more slowly.
 
 The index starts at `-1`, meaning nothing revealed, so a search that finds nothing still visibly
-tries rather than sitting at its first event from the outset.
+tries before it gives up.
 
 The index itself is not this repository's. `usePlayback`, the frame loop and the arithmetic that
 moves the index all live in [sim-kit](https://github.com/stefanos-larkou/sim-kit), which documents
@@ -122,7 +122,7 @@ distance = (|dq| + |dr| + |ds|) / 2
 
 ### How a map is generated
 
-Maps are grown from a seed cell rather than carved out of a rectangle, so connectivity is
+Maps are grown outwards from a seed cell, never carved out of a rectangle, so connectivity is
 structural: every cell is placed adjacent to one already placed, and nothing can be walled off by
 accident.
 
@@ -259,7 +259,7 @@ Shared behaviour is tested by looping the registry, so a new algorithm is covere
 registered. A per-algorithm file then asserts only what that one uniquely promises, e.g., that A*
 matches Dijkstra's cost for fewer visits.
 
-Random output is tested by its invariants rather than its value: a generated map has the requested
+Random output is tested by its invariants instead of its value: a generated map has the requested
 number of cells, is fully connected, and is windier at higher complexity.
 
 The canvas itself is not tested. jsdom has no rendering context, so the drawing code is kept free
