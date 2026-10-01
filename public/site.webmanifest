@@ -1,0 +1,28 @@
+{
+    "name": "Find My Way",
+    "short_name": "Find My Way",
+    "description": "A pathfinding visualiser on a hexagonal grid. Each map is a randomly generated irregular connected shape, and a search works outwards from a root hex until it reaches the target.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#0d3b34",
+    "theme_color": "#0d3b34",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
